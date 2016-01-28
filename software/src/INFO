@@ -1,0 +1,21 @@
+USEFUL INFO
+
+USB COMMUNICATIONS
+==================
+
+
+1.  Host opens USB device
+        a.  Loops through all usb devices
+        b.  Checks vendor ID and name
+        c.  Checks product ID and name
+        d.  Return usb_dev_handle if match is found
+
+2.  Host sends USB requests (CONTROL_IN) to target using usbRequest_t structure defined in usbdrv/usbdrv.h.
+
+3.  V-USB library automatically calls usbFunctionSetup() method when it receives vendor-specific control messages.
+    There are 2 ways of returning data to host:
+        a.  Set the global pointer usbMsgPtr to a (static RAM) memory block and return the length of data from the function
+        b.  Return USB_NO_MSG in 'usbFunctionSetup()'. The driver will then call 'usbFunctionRead() when data is needed.
+            (this means we have to implement usbFunctionRead)
+
+
