@@ -124,12 +124,12 @@ section at the end of this file).
  * The value is in milliamperes. [It will be divided by two since USB
  * communicates power requirements in units of 2 mA.]
  */
-#define USB_CFG_IMPLEMENT_FN_WRITE      1
+#define USB_CFG_IMPLEMENT_FN_WRITE      0
 /* Set this to 1 if you want usbFunctionWrite() to be called for control-out
  * transfers. Set it to 0 if you don't need it and want to save a couple of
  * bytes.
  */
-#define USB_CFG_IMPLEMENT_FN_READ       1
+#define USB_CFG_IMPLEMENT_FN_READ       0
 /* Set this to 1 if you need to send control replies which are generated
  * "on the fly" when usbFunctionRead() is called. If you only want to send
  * data from a static buffer, set it to 0 and return the data from
@@ -163,7 +163,7 @@ section at the end of this file).
  * proceed, do a return after doing your things. One possible application
  * (besides debugging) is to flash a status LED on each packet.
  */
-/* #define USB_RESET_HOOK(resetStarts)     if(!resetStarts){hadUsbReset();} */
+/*#define USB_RESET_HOOK(resetStarts)     if(!resetStarts){hadUsbReset();} */
 /* This macro is a hook if you need to know when an USB RESET occurs. It has
  * one parameter which distinguishes between the start of RESET state and its
  * end.
@@ -204,10 +204,7 @@ section at the end of this file).
  * usbFunctionWrite(). Use the global usbCurrentDataToken and a static variable
  * for each control- and out-endpoint to check for duplicate packets.
  */
-//#if USB_CFG_CLOCK_KHZ==16500
 
-//#include "osccal.h"
-/*
 #ifndef __ASSEMBLER__
         void calibrateOscillatorASM(void);
 
@@ -220,11 +217,7 @@ section at the end of this file).
 
   #define USB_CFG_HAVE_MEASURE_FRAME_LENGTH   0
 #endif
-*/
 
-/* define this macro to 1 if you want the function usbMeasureFrameLength()
- * compiled in. This function can be used to calibrate the AVR's RC oscillator.
- */
 #define USB_USE_FAST_CRC                0
 /* The assembler module has two implementations for the CRC algorithm. One is
  * faster, the other is smaller. This CRC routine is only used for transmitted
