@@ -17,7 +17,6 @@ OBJECTS = usbdrv/usbdrv.o usbdrv/usbdrvasm.o usbdrv/oddebug.o main.o osccalASM.o
 
 COMPILE = avr-gcc -Wall -Os -DF_CPU=$(F_CPU) $(CFLAGS) -mmcu=$(DEVICE)
 
-
 ##### Start of rules definition #####
 
 help:
@@ -25,7 +24,7 @@ help:
 	@echo "make hex ....... to build main.hex"
 	@echo "make program ... to flash fuses and firmware"
 	@echo "make flash ..... to flash the firmware (use this on metaboard)"
-	@echo "make fuse .....  to flash the fuses only"
+	@echo "make fuse ...... to flash the fuses only"
 	@echo "make clean ..... to delete objects and hex file"
 
 hex: main.hex main.eep

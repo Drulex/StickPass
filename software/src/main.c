@@ -8,19 +8,26 @@
 #define LED_1 (1<<PB0)
 #define USB_LED_OFF 0
 #define USB_LED_ON  1
+#define USB_DATA_OUT 2
 
+static unsigned char replyBuffer[16] = "USB write test";
 
 // this gets called when custom control message is received
 USB_PUBLIC uchar usbFunctionSetup(uchar data[8]) {
     usbRequest_t *rq = (void *)data; // cast data to correct type
 
     switch(rq->bRequest) { // custom command is in the bRequest field
-    case USB_LED_ON:
-        PORTB |= LED_1; // turn LED on
-        return 0;
-    case USB_LED_OFF:
-        PORTB &= ~LED_1; // turn LED off
-        return 0;
+        case USB_LED_ON:
+            PORTB |= LED_1; // turn LED on
+            return 0;
+
+        case USB_LED_OFF:
+            PORTB &= ~LED_1; // turn LED off
+            return 0;
+
+        case USB_DATA_OUT:
+            usbMsgPtr = replyBuffer;
+            return sizeof(replyBuffer);
     }
 
     return 0; // should not get here
