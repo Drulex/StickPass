@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <syslog.h>
 
 /* libusb */
 #include <usb.h>
@@ -9,6 +10,10 @@
 #include "stickapp.h"
 
 int main(int argc, char **argv) {
+
+    // open syslog
+    openlog("StickApp", LOG_PERROR, LOG_USER);
+
     usb_dev_handle *handle = NULL;
     int nBytes = 0;
     char buffer[256];
@@ -21,11 +26,14 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    handle = usbOpenDevice(0x16C0, "alexandru@jora.ca", 0x05DC, "StickPass");
+    handle = usbOpenDevice(USB_VID, vendorName, USB_PID, productName);
 
     if(handle == NULL) {
-        fprintf(stderr, "Could not find USB Device!\n");
+        syslog(LOG_DEBUG, "Error! Could not find USB Device!");
         exit(1);
+    }
+    else {
+        syslog(LOG_INFO, "Successfully opened device: VID=%d PID=%d", USB_VID, USB_PID);
     }
 
     if(strcmp(argv[1], "led_on") == 0) {
@@ -40,13 +48,16 @@ int main(int argc, char **argv) {
         nBytes = usb_control_msg(handle,
             USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_IN,
             USB_DATA_OUT, 0, 0, (char *)buffer, sizeof(buffer), 5000);
-        fprintf(stderr, "Got %d bytes:\n%s\n", nBytes, buffer);
+        syslog(LOG_INFO, "Received %d bytes from USB device.\nDATA=%s", nBytes, buffer);
     }
 
     if(nBytes < 0)
         fprintf(stderr, "USB error: %sn", usb_strerror());
 
     usb_close(handle);
+
+    // close syslog
+    closelog();
 
     return 0;
 }
