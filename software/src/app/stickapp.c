@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
 
     usb_dev_handle *handle = NULL;
     int nBytes = 0;
-    char buffer[256];
+    char buffer[32];
 
     if(argc < 2) {
         printf("Usage:\n");
@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-static int usbGetDescriptorString(usb_dev_handle *dev, int index, int langid, char *buf, int buflen) {
+int usbGetDescriptorString(usb_dev_handle *dev, int index, int langid, char *buf, int buflen) {
     char buffer[256];
     int rval, i;
 
@@ -98,7 +98,7 @@ static int usbGetDescriptorString(usb_dev_handle *dev, int index, int langid, ch
     return i-1;
 }
 
-static usb_dev_handle *usbOpenDevice(int vendor, char *vendorName, int product, char *productName) {
+usb_dev_handle *usbOpenDevice(int vendor, char *vendorName, int product, char *productName) {
     struct usb_bus *bus;
     struct usb_device *dev;
     char devVendor[256], devProduct[256];

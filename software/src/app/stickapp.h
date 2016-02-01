@@ -11,7 +11,7 @@
 char *vendorName = "alexandru@jora.ca";
 char *productName = "StickPass";
 
-static int usbGetDescriptorString(usb_dev_handle *dev, int index, int langid, char *buf, int buflen);
-static usb_dev_handle *usbOpenDevice(int vendor, char *vendorName, int product, char *productName);
+int usbGetDescriptorString(usb_dev_handle *dev, int index, int langid, char *buf, int buflen);
+usb_dev_handle *usbOpenDevice(int vendor, char *vendorName, int product,  char *productName);
 
 #endif
