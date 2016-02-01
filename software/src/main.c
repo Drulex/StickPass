@@ -19,12 +19,15 @@
  */
 
 #include <avr/io.h>
+#include <stdio.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 #include <avr/eeprom.h>
 
+// v-usb library
 #include "usbdrv.h"
+
 
 #define LED_1 (1<<PB0)
 #define USB_LED_OFF 0
@@ -32,8 +35,11 @@
 #define USB_DATA_OUT 2
 
 // testing eeprom read/write
-static unsigned char write_data[10] = "test_data_";
-static unsigned char read_data[10];
+static unsigned char write_data[16] = "eeprom_data_test";
+static unsigned char debugData[16];
+static unsigned char usbMsgData[16];
+
+static unsigned char debugFlag = 0;
 
 // this gets called when custom control message is received
 USB_PUBLIC uchar usbFunctionSetup(uchar data[8]) {
@@ -49,8 +55,15 @@ USB_PUBLIC uchar usbFunctionSetup(uchar data[8]) {
             return 0;
 
         case USB_DATA_OUT:
-            usbMsgPtr = read_data;                 // tell driver where the buffer starts
-            return sizeof(read_data);                         // tell driver how many bytes to send
+            if(debugFlag) {
+                usbMsgPtr = debugData;
+                debugFlag = 0;
+                return sizeof(debugData);
+            }
+            else {
+                usbMsgPtr = usbMsgData;
+                return sizeof(usbMsgData);
+            }
     }
 
     return 0; // should not get here
@@ -63,7 +76,8 @@ int main() {
     wdt_enable(WDTO_1S); // enable 1s watchdog timer
 
     // write some data to eeprom
-    eeprom_update_block((const void *)write_data, (void *)0, 10);
+    eeprom_update_block((const void *)write_data, (void *)0, 16);
+    sprintf((char *)usbMsgData, "usbMsgData_test");
 
     usbInit();
 
@@ -79,7 +93,8 @@ int main() {
     PORTB &= ~LED_1;
 
     // read data from eeprom
-    eeprom_read_block((void *)read_data, (const void *)0, 10);
+    eeprom_read_block((void *)debugData, (const void *)0, 16);
+    debugFlag = 1;
 
     usbDeviceConnect();
 
