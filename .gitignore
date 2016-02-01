@@ -1,2 +1,7 @@
 software/references/
 *.swp
+*.o
+*.hex
+*.eep
+*.elf
+*.map
