@@ -2,6 +2,7 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
+#include <avr/eeprom.h>
 
 #include "usbdrv.h"
 
@@ -10,7 +11,9 @@
 #define USB_LED_ON  1
 #define USB_DATA_OUT 2
 
-static unsigned char replyBuffer[16] = "USB write test";
+// testing eeprom read/write
+static unsigned char write_data[10] = "test_data_";
+static unsigned char read_data[10];
 
 // this gets called when custom control message is received
 USB_PUBLIC uchar usbFunctionSetup(uchar data[8]) {
@@ -26,8 +29,8 @@ USB_PUBLIC uchar usbFunctionSetup(uchar data[8]) {
             return 0;
 
         case USB_DATA_OUT:
-            usbMsgPtr = replyBuffer;
-            return sizeof(replyBuffer);
+            usbMsgPtr = read_data;                 // tell driver where the buffer starts
+            return sizeof(read_data);                         // tell driver how many bytes to send
     }
 
     return 0; // should not get here
@@ -38,6 +41,9 @@ int main() {
     DDRB = 1; // PB0 as output
 
     wdt_enable(WDTO_1S); // enable 1s watchdog timer
+
+    // write some data to eeprom
+    eeprom_update_block((const void *)write_data, (void *)0, 10);
 
     usbInit();
 
@@ -51,6 +57,9 @@ int main() {
     }
     // turn off LED1
     PORTB &= ~LED_1;
+
+    // read data from eeprom
+    eeprom_read_block((void *)read_data, (const void *)0, 10);
 
     usbDeviceConnect();
 
