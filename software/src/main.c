@@ -1,3 +1,23 @@
+/*
+ * TODO
+ * ====
+ *
+ *  COMMUNICATIONS
+ *  --------------
+ *    Routine to send debug data to user app on a constant basis
+ *    Routine to parse incoming ID_BLOCK (64 bytes containing id_name, username, password)
+ *
+ *  MEMORY MANAGEMENT
+ *  -----------------
+ *    Routine to update EEPROM memory with parsed elements from ID_BLOCK
+ *    Memory encryption and decryption
+ *
+ *  HID FIRMWARE
+ *    Implementation of keyboard usb_descriptor for HID device
+ *
+ *
+ */
+
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
