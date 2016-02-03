@@ -18,6 +18,8 @@
  *  the scope of this project, but is definitely a more elegant solution that could be
  *  implemented in a future release.
  *
+ *  *Each idBlock component should be padded with '\0' to fill its respective block size.*
+ *
  *  Typical sequence:
  *  -----------------
  *
@@ -38,6 +40,7 @@
  */
 
 #include "credentials.h"
+#include <avr/eeprom.h>
 
 static unsigned char credCount;
 
@@ -53,12 +56,30 @@ int parseIdBlock(cred_t *cred, unsigned char *idBlock) {
 }
 
 int update_credential(cred_t cred) {
+    /*
+     * TODO
+     *
+     * Add logic to verify if a credential exists in which case we only
+     * need to update the idUsername and/or idPassword
+     *
+     */
+
     int memPtr;
-    if(credCount == 8)
+    if(credCount == MAX_CRED)
         return -1;
 
     // eeprom credential memory pointer
-    memPtr = (credCount * 64);
+    memPtr = (credCount * ID_BLOCK_LEN);
+
+    // write idName to eeprom and increment memptr to idUsername
+    eeprom_update_block((const void *)cred.idName, (void *)memPtr, ID_NAME_LEN);
+    memPtr += ID_NAME_LEN;
+
+    eeprom_update_block((const void *)cred.idUsername, (void *)memPtr, ID_USERNAME_LEN);
+    memPtr += ID_USERNAME_LEN;
+
+    eeprom_update_block((const void *)cred.idPassword, (void *)memPtr, ID_PASSWORD_LEN);
+
 }
 
 int main(void) {
