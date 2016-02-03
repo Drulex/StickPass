@@ -42,11 +42,11 @@
 static unsigned char credCount;
 
 int parseIdBlock(cred_t *cred, unsigned char *idBlock) {
-    if(snprintf(cred->idName, 10+1, &idBlock[0]) < 0)
+    if(snprintf(cred->idName, ID_NAME_LEN + 1, &idBlock[0]) < 0)
         return -1;
-    if(snprintf(cred->idUsername, 32+1, &idBlock[10]) < 0)
+    if(snprintf(cred->idUsername, ID_USERNAME_LEN + 1, &idBlock[0 + ID_NAME_LEN]) < 0)
         return -1;
-    if(snprintf(cred->idPassword, 22+1, &idBlock[42]) < 0)
+    if(snprintf(cred->idPassword, ID_PASSWORD_LEN + 1, &idBlock[ID_NAME_LEN + ID_USERNAME_LEN]) < 0)
         return -1;
 
     return 0;
@@ -65,7 +65,7 @@ int main(void) {
 
     credCount = 0;
     cred_t cred;
-    unsigned char idBlockTest[64] = "idname1234idusername123456789abcdefghijklmidpassword123456789abc";
+    unsigned char idBlockTest[ID_BLOCK_LEN] = "linkedin\0\0alexandru.jora@gmail.com\0\0\0\0\0\0\0\0password123\0\0\0\0\0\0\0\0\0\0\0";
     int rval;
 
     rval = parseIdBlock(&cred, idBlockTest);
