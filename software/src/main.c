@@ -27,6 +27,7 @@
 
 // v-usb library
 #include "usbdrv.h"
+#include "credentials.h"
 
 
 #define LED_1 (1<<PB0)
@@ -35,11 +36,13 @@
 #define USB_DATA_OUT 2
 
 // testing eeprom read/write
-static unsigned char write_data[16] = "eeprom_data_test";
-static unsigned char debugData[16];
-static unsigned char usbMsgData[16];
+static unsigned char debugData[32];
+static unsigned char usbMsgData[32];
 
 static unsigned char debugFlag = 0;
+
+unsigned char credCount;
+unsigned char msgPtr;
 
 // this gets called when custom control message is received
 USB_PUBLIC uchar usbFunctionSetup(uchar data[8]) {
@@ -69,20 +72,44 @@ USB_PUBLIC uchar usbFunctionSetup(uchar data[8]) {
     return 0; // should not get here
 }
 
+uchar getInterruptData(uchar *msg) {
+    uchar i;
+    for(i = 0; i < 8; i++) {
+        if(debugData[msgPtr] == '\0') {
+            msgPtr = 0;
+            return i;
+        }
+        msg[i] = debugData[msgPtr];
+        msgPtr++;
+    }
+    // should be 8
+    return i;
+}
+
 int main() {
     uchar i;
+    msgPtr = 0;
     DDRB = 1; // PB0 as output
 
-    wdt_enable(WDTO_1S); // enable 1s watchdog timer
+    //turn on LED
+    PORTB |= LED_1;
 
-    // write some data to eeprom
-    eeprom_update_block((const void *)write_data, (void *)0, 16);
+    // some test data
+    char idBlockTest[ID_BLOCK_LEN] = "testappn\0\0test12345.jora@gmail.com\0\0\0\0\0\0\0\0password123\0\0\0\0\0\0\0\0\0\0\0";
+    cred_t cred;
+    parseIdBlock(&cred, idBlockTest);
+    update_credential(cred);
+
+    // for testing this should be in eeprom eventually
+    credCount = 0;
+
     sprintf((char *)usbMsgData, "usbMsgData_test");
+    sprintf((char *)debugData, "interrupt_in_test");
+
+    debugFlag = 1;
+    //eeprom_read_block((void *)debugData, (const void *)10, 32);
 
     usbInit();
-
-    //turn on both LEDS
-    PORTB |= LED_1;
 
     usbDeviceDisconnect(); // enforce re-enumeration
     for(i = 0; i<250; i++) { // wait 500 ms
@@ -92,17 +119,21 @@ int main() {
     // turn off LED1
     PORTB &= ~LED_1;
 
-    // read data from eeprom
-    eeprom_read_block((void *)debugData, (const void *)0, 16);
-    debugFlag = 1;
-
     usbDeviceConnect();
 
+    wdt_enable(WDTO_1S); // enable 1s watchdog timer
     sei(); // Enable interrupts after re-enumeration
 
     while(1) {
         wdt_reset(); // keep the watchdog happy
         usbPoll();
+        if(usbInterruptIsReady() && debugFlag) {
+            PORTB |= LED_1;
+            unsigned char msg[8];
+            uchar len = getInterruptData(msg);
+            if(len > 0)
+                usbSetInterrupt(msg, len);
+        }
     }
 
     return 0;
