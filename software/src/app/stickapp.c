@@ -1,3 +1,13 @@
+/*
+ * TODO
+ * ====
+ *  Routine to continuously receive debug data from device
+ *
+ *
+ *
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -23,6 +33,7 @@ int main(int argc, char **argv) {
         printf("./stickapp led_on\n");
         printf("./stickapp led_off\n");
         printf("./stickapp data_out (read from device)\n");
+        printf("./stickapp interrupt_in (read from device)\n");
         exit(1);
     }
 
@@ -49,10 +60,13 @@ int main(int argc, char **argv) {
             USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_IN,
             USB_DATA_OUT, 0, 0, (char *)buffer, sizeof(buffer), 5000);
         syslog(LOG_INFO, "Received %d bytes from USB device.\nDATA=%s", nBytes, buffer);
+    } else if(strcmp(argv[1], "interrupt_in") == 0) {
+        nBytes = usb_interrupt_read(handle,
+        USB_ENDPOINT_IN | 1, buffer, sizeof(buffer), 5000);
+        syslog(LOG_INFO, "Received %d bytes from USB device.\nDATA=%s", nBytes, buffer);
     }
-
     if(nBytes < 0)
-        fprintf(stderr, "USB error: %sn", usb_strerror());
+        fprintf(stderr, "USB error: %s", usb_strerror());
 
     usb_close(handle);
 
