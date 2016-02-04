@@ -1,4 +1,6 @@
 software/references/
+software/src/test/
+software/src/app/stickapp
 *.swp
 *.o
 *.hex

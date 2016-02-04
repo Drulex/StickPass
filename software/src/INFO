@@ -3,7 +3,6 @@ USEFUL INFO
 USB COMMUNICATIONS
 ==================
 
-
 1.  Host opens USB device
         a.  Loops through all usb devices
         b.  Checks vendor ID and name
@@ -19,3 +18,29 @@ USB COMMUNICATIONS
             (this means we have to implement usbFunctionRead)
 
 
+
+EEPROM READING & WRITING
+========================
+
+1. EEMEM attribute instructs compiler to assign variable into EEPROM space
+
+/* example code below */
+
+#include <avr/eeprom.h>
+
+uint8_t  EEMEM NonVolatileChar;
+uint16_t EEMEM NonVolatileInt;
+uint8_t  EEMEM NonVolatileString[10];
+
+int main(void)
+{
+    uint8_t  SRAMchar;
+    uint16_t SRAMint;
+    uint8_t  SRAMstring[10];
+
+    SRAMchar = eeprom_read_byte(&NonVolatileChar);
+    SRAMint  = eeprom_read_word(&NonVolatileInt);
+    eeprom_read_block((void*)SRAMstring, (const void*)NonVolatileString, 10);
+}
+
+2. Use of PROGMEM to save RAM and store some info in flash memory instead.
