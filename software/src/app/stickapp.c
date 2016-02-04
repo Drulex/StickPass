@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
     else {
-        syslog(LOG_INFO, "Successfully opened device: VID=%d PID=%d", USB_VID, USB_PID);
+        syslog(LOG_INFO, "Successfully opened device: VID=%04x PID=%04x", USB_VID, USB_PID);
     }
 
     if(strcmp(argv[1], "led_on") == 0) {
