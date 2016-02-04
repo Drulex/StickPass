@@ -25,51 +25,42 @@
 #include <avr/wdt.h>
 #include <avr/eeprom.h>
 
-// v-usb library
 #include "usbdrv.h"
 #include "credentials.h"
+#include "led.h"
 
+// Buffer to send debug messages on interrupt endpoint 1
+unsigned char debugData[64];
 
-#define LED_1 (1<<PB0)
-#define USB_LED_OFF 0
-#define USB_LED_ON  1
-#define USB_DATA_OUT 2
+// Buffer to reply to custom control messages on endpoint 0
+unsigned char usbMsgData[8];
 
-// testing eeprom read/write
-static unsigned char debugData[32];
-static unsigned char usbMsgData[32];
+// Debug flag. Set this to 1 after filling debugData buffer to send it
+unsigned char debugFlag = 0;
 
-static unsigned char debugFlag = 0;
-
+// To keep track of number of credentials in EEPROM
 unsigned char credCount;
+
+// To iterate through debugData when building interrupt_in messages
 unsigned char msgPtr;
 
 // this gets called when custom control message is received
 USB_PUBLIC uchar usbFunctionSetup(uchar data[8]) {
-    usbRequest_t *rq = (void *)data; // cast data to correct type
-
-    switch(rq->bRequest) { // custom command is in the bRequest field
+    usbRequest_t *rq = (void *)data;
+    switch(rq->bRequest) {
         case USB_LED_ON:
-            PORTB |= LED_1; // turn LED on
+            LED_HIGH();
             return 0;
 
         case USB_LED_OFF:
-            PORTB &= ~LED_1; // turn LED off
+            LED_LOW();
             return 0;
 
         case USB_DATA_OUT:
-            if(debugFlag) {
-                usbMsgPtr = debugData;
-                debugFlag = 0;
-                return sizeof(debugData);
-            }
-            else {
-                usbMsgPtr = usbMsgData;
-                return sizeof(usbMsgData);
-            }
+            usbMsgPtr = usbMsgData;
+            return sizeof(usbMsgData);
     }
-
-    return 0; // should not get here
+    return 0;
 }
 
 uchar getInterruptData(uchar *msg) {
@@ -82,17 +73,22 @@ uchar getInterruptData(uchar *msg) {
         msg[i] = debugData[msgPtr];
         msgPtr++;
     }
-    // should be 8
     return i;
 }
 
 int main() {
-    uchar i;
-    msgPtr = 0;
-    DDRB = 1; // PB0 as output
+    // Modules initialization
+    LED_Init();
 
-    //turn on LED
-    PORTB |= LED_1;
+    uchar i;
+
+    // Variables initialization
+    msgPtr = 0;
+    credCount = 0;
+
+    snprintf((char *)usbMsgData, 8, "usbMsg");
+    snprintf((char *)debugData, 64, "this_is_a_interrupt_in_test");
+    debugFlag = 1;
 
     // some test data
     char idBlockTest[ID_BLOCK_LEN] = "testappn\0\0test12345.jora@gmail.com\0\0\0\0\0\0\0\0password123\0\0\0\0\0\0\0\0\0\0\0";
@@ -100,15 +96,9 @@ int main() {
     parseIdBlock(&cred, idBlockTest);
     update_credential(cred);
 
-    // for testing this should be in eeprom eventually
-    credCount = 0;
-
-    sprintf((char *)usbMsgData, "usbMsgData_test");
-    sprintf((char *)debugData, "interrupt_in_test");
-
-    debugFlag = 1;
     //eeprom_read_block((void *)debugData, (const void *)10, 32);
 
+    LED_HIGH();
     usbInit();
 
     usbDeviceDisconnect(); // enforce re-enumeration
@@ -116,25 +106,27 @@ int main() {
         wdt_reset(); // keep the watchdog happy
         _delay_ms(2);
     }
-    // turn off LED1
-    PORTB &= ~LED_1;
 
     usbDeviceConnect();
 
-    wdt_enable(WDTO_1S); // enable 1s watchdog timer
-    sei(); // Enable interrupts after re-enumeration
+    LED_LOW();
+
+    // Enable 1s watchdog
+    wdt_enable(WDTO_1S);
+
+    // Enable global interrupts after re-enumeration
+    sei();
 
     while(1) {
-        wdt_reset(); // keep the watchdog happy
+        wdt_reset();
         usbPoll();
         if(usbInterruptIsReady() && debugFlag) {
-            PORTB |= LED_1;
+            LED_TOGGLE();
             unsigned char msg[8];
             uchar len = getInterruptData(msg);
             if(len > 0)
                 usbSetInterrupt(msg, len);
         }
     }
-
     return 0;
 }
