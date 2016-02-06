@@ -1,11 +1,11 @@
 /*
- * TODO
- * ====
- *  Routine to continuously receive debug data from device
+ * File: stickapp.c
+ * Project: StickPass
+ * Author: Alexandru Jora (alexandru@jora.ca)
+ * Creation Date: 2016-01-29
+ * License: GNU GPL v2 (see License.txt)
  *
- *
- *
- *
+ * User application software for StickPass
  */
 
 #include <stdio.h>

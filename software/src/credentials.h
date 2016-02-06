@@ -1,3 +1,12 @@
+/*
+ * File: credentials.h
+ * Project: StickPass
+ * Author: Alexandru Jora (alexandru@jora.ca)
+ * Creation Date: 2016-02-02
+ * License: GNU GPL v2 (see License.txt)
+ *
+ */
+
 #ifndef CREDENTIALS_H
 #define CREDENTIALS_H
 

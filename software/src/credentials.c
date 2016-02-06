@@ -1,4 +1,9 @@
-/*  File: credentials.c
+/*
+ * File: credentials.c
+ * Project: StickPass
+ * Author: Alexandru Jora (alexandru@jora.ca)
+ * Creation Date: 2016-02-02
+ * License: GNU GPL v2 (see License.txt)
  *
  *
  *  Credentials management scheme
@@ -55,13 +60,6 @@ int parseIdBlock(cred_t *cred, char *idBlock) {
 }
 
 int update_credential(cred_t cred) {
-    /*
-     * TODO
-     *
-     * Add logic to verify if a credential exists in which case we only
-     * need to update the idUsername and/or idPassword
-     *
-     */
 
     int memPtr;
     if(credCount == MAX_CRED)

@@ -1,11 +1,15 @@
-#ifndef LED_H
-#define LED_H
-
 /*
  * File: led.h
- * Some general purpose macros to help using LED
+ * Project: StickPass
+ * Author: Alexandru Jora (alexandru@jora.ca)
+ * Creation Date: 2016-01-27
+ * License: GNU GPL v2 (see License.txt)
  *
+ * Some general purpose macros to help using LED
  */
+
+#ifndef LED_H
+#define LED_H
 
 // Using LED on PB4
 #define LED_DDR         (DDRB)

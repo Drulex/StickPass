@@ -1,20 +1,9 @@
 /*
- * TODO
- * ====
- *
- *  COMMUNICATIONS
- *  --------------
- *    Routine to send debug data to user app on a constant basis
- *    Routine to parse incoming ID_BLOCK (64 bytes containing id_name, username, password)
- *
- *  MEMORY MANAGEMENT
- *  -----------------
- *    Routine to update EEPROM memory with parsed elements from ID_BLOCK
- *    Memory encryption and decryption
- *
- *  HID FIRMWARE
- *    Implementation of keyboard usb_descriptor for HID device
- *
+ * File: main.c
+ * Project: StickPass
+ * Author: Alexandru Jora (alexandru@jora.ca)
+ * Creation Date: 2016-01-27
+ * License: GNU GPL v2 (see License.txt)
  *
  */
 
@@ -30,19 +19,19 @@
 #include "led.h"
 
 // Buffer to send debug messages on interrupt endpoint 1
-unsigned char debugData[64];
+volatile unsigned char debugData[64];
 
 // Buffer to reply to custom control messages on endpoint 0
-unsigned char usbMsgData[8];
+volatile unsigned char usbMsgData[8];
 
 // Debug flag. Set this to 1 after filling debugData buffer to send it
-unsigned char debugFlag = 0;
+volatile unsigned char debugFlag = 0;
 
 // To keep track of number of credentials in EEPROM
 unsigned char credCount;
 
 // To iterate through debugData when building interrupt_in messages
-unsigned char msgPtr;
+volatile unsigned char msgPtr;
 
 // this gets called when custom control message is received
 USB_PUBLIC uchar usbFunctionSetup(uchar data[8]) {
@@ -94,7 +83,7 @@ int main() {
     char idBlockTest[ID_BLOCK_LEN] = "testappn\0\0test12345.jora@gmail.com\0\0\0\0\0\0\0\0password123\0\0\0\0\0\0\0\0\0\0\0";
     cred_t cred;
     parseIdBlock(&cred, idBlockTest);
-    update_credential(cred);
+    update_credetial(cred);
 
     //eeprom_read_block((void *)debugData, (const void *)10, 32);
 
