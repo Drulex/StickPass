@@ -19,10 +19,10 @@
 #include "led.h"
 
 // Buffer to send debug messages on interrupt endpoint 1
-volatile unsigned char debugData[64];
+unsigned char debugData[64];
 
 // Buffer to reply to custom control messages on endpoint 0
-volatile unsigned char usbMsgData[8];
+unsigned char usbMsgData[8];
 
 // Debug flag. Set this to 1 after filling debugData buffer to send it
 volatile unsigned char debugFlag = 0;
@@ -32,6 +32,8 @@ unsigned char credCount;
 
 // To iterate through debugData when building interrupt_in messages
 volatile unsigned char msgPtr;
+
+unsigned char pbCounter = 0;
 
 // this gets called when custom control message is received
 USB_PUBLIC uchar usbFunctionSetup(uchar data[8]) {
@@ -57,6 +59,7 @@ uchar getInterruptData(uchar *msg) {
     for(i = 0; i < 8; i++) {
         if(debugData[msgPtr] == '\0') {
             msgPtr = 0;
+            debugFlag = 0;
             return i;
         }
         msg[i] = debugData[msgPtr];
@@ -69,12 +72,17 @@ int main() {
     // Modules initialization
     LED_Init();
 
+    // pushbutton init
+    PORTB = (1<<PB3); // PB1 is input with internal pullup resistor activated
+
     uchar i;
 
     // Variables initialization
     msgPtr = 0;
     credCount = 0;
 
+    memset(usbMsgData, 0, 8);
+    memset(debugData, 0, 64);
     snprintf((char *)usbMsgData, 8, "usbMsg");
     snprintf((char *)debugData, 64, "this_is_a_interrupt_in_test");
     debugFlag = 1;
@@ -83,16 +91,17 @@ int main() {
     char idBlockTest[ID_BLOCK_LEN] = "testappn\0\0test12345.jora@gmail.com\0\0\0\0\0\0\0\0password123\0\0\0\0\0\0\0\0\0\0\0";
     cred_t cred;
     parseIdBlock(&cred, idBlockTest);
-    update_credetial(cred);
+    update_credential(cred);
 
     //eeprom_read_block((void *)debugData, (const void *)10, 32);
 
     LED_HIGH();
     usbInit();
 
-    usbDeviceDisconnect(); // enforce re-enumeration
-    for(i = 0; i<250; i++) { // wait 500 ms
-        wdt_reset(); // keep the watchdog happy
+    // enforce re-enumeration
+    usbDeviceDisconnect();
+    for(i = 0; i<250; i++) {
+        wdt_reset();
         _delay_ms(2);
     }
 
@@ -110,12 +119,24 @@ int main() {
         wdt_reset();
         usbPoll();
         if(usbInterruptIsReady() && debugFlag) {
-            LED_TOGGLE();
             unsigned char msg[8];
             uchar len = getInterruptData(msg);
             if(len > 0)
                 usbSetInterrupt(msg, len);
         }
+
+        if(!(PINB & (1<<PB3))) {
+            if(pbCounter == 255) {
+                memset(debugData, 0, 64);
+                snprintf((char *)debugData, 64, "pushbutton was pressed");
+                debugFlag = 1;
+                LED_TOGGLE();
+            }
+            pbCounter = 0;
+        }
+        // debouncing
+        if(pbCounter < 255)
+            pbCounter++;
     }
     return 0;
 }
