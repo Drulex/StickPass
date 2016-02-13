@@ -62,6 +62,7 @@ const PROGMEM char usbHidReportDescriptor[USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH] 
     0x81, 0x00,                    //   INPUT (Data,Ary,Abs)
     0xc0                           // END_COLLECTION
 };
+
 // Buffer to send debug messages on interrupt endpoint 1
 unsigned char debugData[64];
 
@@ -180,6 +181,7 @@ int main() {
     snprintf((char *)debugData, 64, "this_is_a_interrupt_in_test");
     debugFlag = 1;
 
+/*
     // some test data
     char idBlockTest[ID_BLOCK_LEN] = "testappn\0\0test12345.jora@gmail.com\0\0\0\0\0\0\0\0password123\0\0\0\0\0\0\0\0\0\0\0";
     cred_t cred;
@@ -187,6 +189,12 @@ int main() {
     update_credential(cred);
 
     //eeprom_read_block((void *)debugData, (const void *)10, 32);
+*/
+    // clear report
+    for(i=0; i<sizeof(keyboard_report); i++) // clear report initially
+        ((uchar *)&keyboard_report)[i] = 0;
+
+
 
     LED_HIGH();
     usbInit();
@@ -211,25 +219,34 @@ int main() {
     while(1) {
         wdt_reset();
         usbPoll();
-        if(usbInterruptIsReady() && debugFlag) {
-            unsigned char msg[8];
-            uchar len = getInterruptData(msg);
-            if(len > 0)
-                usbSetInterrupt(msg, len);
-        }
-
         if(!(PINB & (1<<PB3))) {
-            if(pbCounter == 255) {
-                memset(debugData, 0, 64);
-                snprintf((char *)debugData, 64, "pushbutton was pressed");
-                debugFlag = 1;
-                LED_TOGGLE();
+            if(state == STATE_WAIT && pbCounter == 255) {
+                state = STATE_SEND_KEY;
             }
             pbCounter = 0;
         }
         // debouncing
         if(pbCounter < 255)
             pbCounter++;
+
+        if(usbInterruptIsReady() && state != STATE_WAIT && LED_state != 0xff) {
+            switch(state) {
+                case STATE_SEND_KEY:
+                    buildReport('x');
+                    state = STATE_RELEASE_KEY; // release next
+                    break;
+
+                case STATE_RELEASE_KEY:
+                    buildReport(0);
+                    state = STATE_WAIT; // go back to waiting
+                    break;
+
+                default:
+                    state = STATE_WAIT; // should not happen
+            }
+            usbSetInterrupt((void *)&keyboard_report, sizeof(keyboard_report));
+            LED_TOGGLE();
+        }
     }
     return 0;
 }
