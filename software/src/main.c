@@ -17,6 +17,7 @@
 #include "usbdrv.h"
 #include "credentials.h"
 #include "led.h"
+#include "hid.h"
 
 #define NUM_LOCK 1
 #define CAPS_LOCK 2
@@ -26,6 +27,31 @@
 #define STATE_SEND_KEY 1
 #define STATE_RELEASE_KEY 2
 
+// Buffer to send debug messages on interrupt endpoint 1
+unsigned char debugData[64];
+
+// Buffer to reply to custom control messages on endpoint 0
+unsigned char usbMsgData[8];
+
+// Debug flag. Set this to 1 after filling debugData buffer to send it
+volatile unsigned char debugFlag = 0;
+
+// To keep track of number of credentials in EEPROM
+unsigned char credCount;
+
+// To iterate through debugData when building interrupt_in messages
+volatile unsigned char msgPtr;
+
+// init
+unsigned char pbCounter = 0;
+unsigned char state = STATE_WAIT;
+unsigned char flagDone = 0;
+
+keyboard_report_t keyboard_report;
+volatile static uchar LED_state = 0xff;
+static unsigned char idleRate;
+
+// hid descriptor stored in flash
 const PROGMEM char usbHidReportDescriptor[USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH] = {
     0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
     0x09, 0x06,                    // USAGE (Keyboard)
@@ -61,36 +87,6 @@ const PROGMEM char usbHidReportDescriptor[USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH] 
     0xc0                           // END_COLLECTION
 };
 
-// Buffer to send debug messages on interrupt endpoint 1
-unsigned char debugData[64];
-
-// Buffer to reply to custom control messages on endpoint 0
-unsigned char usbMsgData[8];
-
-// Debug flag. Set this to 1 after filling debugData buffer to send it
-volatile unsigned char debugFlag = 0;
-
-// To keep track of number of credentials in EEPROM
-unsigned char credCount;
-
-// To iterate through debugData when building interrupt_in messages
-volatile unsigned char msgPtr;
-
-// init
-unsigned char pbCounter = 0;
-unsigned char state = STATE_WAIT;
-unsigned char flagDone = 0;
-
-typedef struct {
-        uint8_t modifier;
-        uint8_t reserved;
-        uint8_t keycode;
-} keyboard_report_t;
-
-static keyboard_report_t keyboard_report; // sent to PC
-volatile static uchar LED_state = 0xff; // received from PC
-static uchar idleRate; // repeat rate for keyboards
-
 usbMsgLen_t usbFunctionSetup(uchar data[8]) {
     usbRequest_t *rq = (void *)data;
 
@@ -120,89 +116,6 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
         }
     }
     return 0;
-}
-
-void buildReport(uchar sendKey) {
-    // by default no modifier
-    keyboard_report.modifier = 0;
-
-    // handle empty report
-    if(sendKey == 0) {
-        keyboard_report.keycode = 0;
-        return;
-    }
-
-    // handle lowercase chars
-    if(sendKey >= 'a' && sendKey <= 'z') {
-        keyboard_report.keycode = 4 + (sendKey - 'a');
-        return;
-    }
-
-    // handle uppercase chars
-    if(sendKey >= 'A' && sendKey <= 'Z') {
-        keyboard_report.modifier = 2;
-        keyboard_report.keycode = 4 + (sendKey - 'A');
-        return;
-    }
-
-    // handle digits 1 to 9
-    if(sendKey >= '1' && sendKey <= '9') {
-        keyboard_report.keycode = 30 + (sendKey - '1');
-        return;
-    }
-
-    // handle rest of chars
-    else {
-        keyboard_report.modifier = 2;
-        switch(sendKey) {
-
-            case '0':
-                keyboard_report.modifier = 0;
-                keyboard_report.keycode = 0x27;
-                break;
-
-            case '@':
-                keyboard_report.keycode = 0x1F;
-                break;
-
-            case '#':
-                keyboard_report.keycode = 0x20;
-                break;
-
-            case '$':
-                keyboard_report.keycode = 0x21;
-                break;
-
-            case '%':
-                keyboard_report.keycode = 0x22;
-                break;
-
-            case '^':
-                keyboard_report.keycode = 0x23;
-                break;
-
-            case '&':
-                keyboard_report.keycode = 0x24;
-                break;
-
-            case '*':
-                keyboard_report.keycode = 0x25;
-                break;
-
-            case '(':
-                keyboard_report.keycode = 0x26;
-                break;
-
-            case ')':
-                keyboard_report.keycode = 0x27;
-                break;
-
-            // send NULL for unsupported chars
-            default:
-                keyboard_report.keycode = 0;
-                break;
-        }
-    }
 }
 
 usbMsgLen_t usbFunctionWrite(uint8_t * data, uchar len) {
@@ -237,9 +150,8 @@ uchar getInterruptData(uchar *msg) {
 int main() {
     // Modules initialization
     LED_Init();
-
-    // pushbutton init
-    PORTB = (1<<PB3); // PB1 is input with internal pullup resistor activated
+    PB_INIT();
+    clearKeyboardReport();
 
     uchar i;
 
@@ -262,11 +174,6 @@ int main() {
 
     //eeprom_read_block((void *)debugData, (const void *)10, 32);
 */
-    // clear report
-    for(i=0; i<sizeof(keyboard_report); i++) // clear report initially
-        ((uchar *)&keyboard_report)[i] = 0;
-
-
 
     LED_HIGH();
     usbInit();
