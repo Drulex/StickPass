@@ -76,21 +76,35 @@ typedef struct {
 } keyboard_report_t;
 
 static keyboard_report_t keyboard_report; // sent to PC
-// this gets called when custom control message is received
-USB_PUBLIC uchar usbFunctionSetup(uchar data[8]) {
+static uchar idleRate; // repeat rate for keyboards
+
+usbMsgLen_t usbFunctionSetup(uchar data[8]) {
     usbRequest_t *rq = (void *)data;
-    switch(rq->bRequest) {
-        case USB_LED_ON:
-            LED_HIGH();
-            return 0;
 
-        case USB_LED_OFF:
-            LED_LOW();
-            return 0;
+    if((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_CLASS) {
+        switch(rq->bRequest) {
 
-        case USB_DATA_OUT:
-            usbMsgPtr = usbMsgData;
-            return sizeof(usbMsgData);
+            //send NO_KEYS_PRESSED
+            case USBRQ_HID_GET_REPORT:
+                usbMsgPtr = (void *)&keyboard_report;
+                keyboard_report.modifier = 0;
+                keyboard_report.keycode[0] = 0;
+
+                return sizeof(keyboard_report);
+
+            case USBRQ_HID_SET_REPORT: // if wLength == 1, should be LED state
+                return (rq->wLength.word == 1) ? USB_NO_MSG : 0;
+
+            // send idleRate to PC as per spec
+            case USBRQ_HID_GET_IDLE: // send idle rate to PC as required by spec
+                usbMsgPtr = &idleRate;
+                return 1;
+
+            // set idleRate as per spec
+            case USBRQ_HID_SET_IDLE: // save idle rate as required by spec
+                idleRate = rq->wValue.bytes[1];
+                return 0;
+        }
     }
     return 0;
 }
