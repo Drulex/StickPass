@@ -69,6 +69,13 @@ volatile unsigned char msgPtr;
 
 unsigned char pbCounter = 0;
 
+typedef struct {
+        uint8_t modifier;
+        uint8_t reserved;
+        uint8_t keycode[6];
+} keyboard_report_t;
+
+static keyboard_report_t keyboard_report; // sent to PC
 // this gets called when custom control message is received
 USB_PUBLIC uchar usbFunctionSetup(uchar data[8]) {
     usbRequest_t *rq = (void *)data;
