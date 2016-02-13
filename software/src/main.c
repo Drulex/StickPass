@@ -109,6 +109,18 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
     return 0;
 }
 
+// Now only supports letters 'a' to 'z' and 0 (NULL) to clear buttons
+void buildReport(uchar send_key) {
+    keyboard_report.modifier = 0;
+
+    if(send_key >= 'a' && send_key <= 'z')
+        keyboard_report.keycode[0] = 4+(send_key-'a');
+    else
+        keyboard_report.keycode[0] = 0;
+}
+
+}
+
 uchar getInterruptData(uchar *msg) {
     uchar i;
     for(i = 0; i < 8; i++) {
