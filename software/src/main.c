@@ -26,8 +26,6 @@
 #define STATE_SEND_KEY 1
 #define STATE_RELEASE_KEY 2
 
-
-
 const PROGMEM char usbHidReportDescriptor[USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH] = {
     0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
     0x09, 0x06,                    // USAGE (Keyboard)
@@ -81,11 +79,12 @@ volatile unsigned char msgPtr;
 // init
 unsigned char pbCounter = 0;
 unsigned char state = STATE_WAIT;
+unsigned char flagDone = 0;
 
 typedef struct {
         uint8_t modifier;
         uint8_t reserved;
-        uint8_t keycode[6];
+        uint8_t keycode;
 } keyboard_report_t;
 
 static keyboard_report_t keyboard_report; // sent to PC
@@ -102,7 +101,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
             case USBRQ_HID_GET_REPORT:
                 usbMsgPtr = (void *)&keyboard_report;
                 keyboard_report.modifier = 0;
-                keyboard_report.keycode[0] = 0;
+                keyboard_report.keycode = 0;
 
                 return sizeof(keyboard_report);
 
@@ -123,14 +122,87 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
     return 0;
 }
 
-// Now only supports letters 'a' to 'z' and 0 (NULL) to clear buttons
-void buildReport(uchar send_key) {
+void buildReport(uchar sendKey) {
+    // by default no modifier
     keyboard_report.modifier = 0;
 
-    if(send_key >= 'a' && send_key <= 'z')
-        keyboard_report.keycode[0] = 4+(send_key-'a');
-    else
-        keyboard_report.keycode[0] = 0;
+    // handle empty report
+    if(sendKey == 0) {
+        keyboard_report.keycode = 0;
+        return;
+    }
+
+    // handle lowercase chars
+    if(sendKey >= 'a' && sendKey <= 'z') {
+        keyboard_report.keycode = 4 + (sendKey - 'a');
+        return;
+    }
+
+    // handle uppercase chars
+    if(sendKey >= 'A' && sendKey <= 'Z') {
+        keyboard_report.modifier = 2;
+        keyboard_report.keycode = 4 + (sendKey - 'A');
+        return;
+    }
+
+    // handle digits 1 to 9
+    if(sendKey >= '1' && sendKey <= '9') {
+        keyboard_report.keycode = 30 + (sendKey - '1');
+        return;
+    }
+
+    // handle rest of chars
+    else {
+        keyboard_report.modifier = 2;
+        switch(sendKey) {
+
+            case '0':
+                keyboard_report.modifier = 0;
+                keyboard_report.keycode = 0x27;
+                break;
+
+            case '@':
+                keyboard_report.keycode = 0x1F;
+                break;
+
+            case '#':
+                keyboard_report.keycode = 0x20;
+                break;
+
+            case '$':
+                keyboard_report.keycode = 0x21;
+                break;
+
+            case '%':
+                keyboard_report.keycode = 0x22;
+                break;
+
+            case '^':
+                keyboard_report.keycode = 0x23;
+                break;
+
+            case '&':
+                keyboard_report.keycode = 0x24;
+                break;
+
+            case '*':
+                keyboard_report.keycode = 0x25;
+                break;
+
+            case '(':
+                keyboard_report.keycode = 0x26;
+                break;
+
+            case ')':
+                keyboard_report.keycode = 0x27;
+                break;
+
+            // send NULL for unsupported chars
+            default:
+                keyboard_report.keycode = 0;
+                break;
+        }
+    }
 }
 
 usbMsgLen_t usbFunctionWrite(uint8_t * data, uchar len) {
@@ -178,7 +250,7 @@ int main() {
     memset(usbMsgData, 0, 8);
     memset(debugData, 0, 64);
     snprintf((char *)usbMsgData, 8, "usbMsg");
-    snprintf((char *)debugData, 64, "this_is_a_interrupt_in_test");
+    snprintf((char *)debugData, 64, "passwordTestData1234567890*&^$!#");
     debugFlag = 1;
 
 /*
@@ -221,7 +293,9 @@ int main() {
         usbPoll();
         if(!(PINB & (1<<PB3))) {
             if(state == STATE_WAIT && pbCounter == 255) {
+                // proper send request
                 state = STATE_SEND_KEY;
+                flagDone = 0;
             }
             pbCounter = 0;
         }
@@ -229,21 +303,36 @@ int main() {
         if(pbCounter < 255)
             pbCounter++;
 
-        if(usbInterruptIsReady() && state != STATE_WAIT && LED_state != 0xff) {
+
+
+        if(usbInterruptIsReady() && state != STATE_WAIT && !flagDone) {
+            uchar sendKey = debugData[msgPtr];
             switch(state) {
                 case STATE_SEND_KEY:
-                    buildReport('x');
-                    state = STATE_RELEASE_KEY; // release next
+                    buildReport(sendKey);
+                    state = STATE_RELEASE_KEY;
+                    //msgPtr++;
                     break;
 
                 case STATE_RELEASE_KEY:
                     buildReport(0);
-                    state = STATE_WAIT; // go back to waiting
+                    msgPtr++;
+                    if(debugData[msgPtr] == '\0') {
+                        flagDone = 1;
+                        state = STATE_WAIT;
+                        msgPtr = 0;
+                    }
+
+                    else {
+                        state = STATE_SEND_KEY;
+                    }
+
                     break;
 
                 default:
                     state = STATE_WAIT; // should not happen
             }
+
             usbSetInterrupt((void *)&keyboard_report, sizeof(keyboard_report));
             LED_TOGGLE();
         }
