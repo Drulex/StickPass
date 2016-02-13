@@ -18,6 +18,16 @@
 #include "credentials.h"
 #include "led.h"
 
+#define NUM_LOCK 1
+#define CAPS_LOCK 2
+#define SCROLL_LOCK 4
+
+#define STATE_WAIT 0
+#define STATE_SEND_KEY 1
+#define STATE_RELEASE_KEY 2
+
+
+
 const PROGMEM char usbHidReportDescriptor[USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH] = {
     0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
     0x09, 0x06,                    // USAGE (Keyboard)
@@ -67,7 +77,9 @@ unsigned char credCount;
 // To iterate through debugData when building interrupt_in messages
 volatile unsigned char msgPtr;
 
+// init
 unsigned char pbCounter = 0;
+unsigned char state = STATE_WAIT;
 
 typedef struct {
         uint8_t modifier;
@@ -76,6 +88,7 @@ typedef struct {
 } keyboard_report_t;
 
 static keyboard_report_t keyboard_report; // sent to PC
+volatile static uchar LED_state = 0xff; // received from PC
 static uchar idleRate; // repeat rate for keyboards
 
 usbMsgLen_t usbFunctionSetup(uchar data[8]) {
@@ -119,6 +132,19 @@ void buildReport(uchar send_key) {
         keyboard_report.keycode[0] = 0;
 }
 
+usbMsgLen_t usbFunctionWrite(uint8_t * data, uchar len) {
+    if (data[0] == LED_state)
+        return 1;
+    else
+        LED_state = data[0];
+
+    // LED state changed
+    if(LED_state & CAPS_LOCK)
+        LED_HIGH();
+    else
+        LED_LOW();
+
+    return 1;
 }
 
 uchar getInterruptData(uchar *msg) {
