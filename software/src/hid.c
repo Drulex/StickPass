@@ -86,6 +86,15 @@ void buildReport(unsigned char sendKey) {
                 keyboard_report.keycode = 0x27;
                 break;
 
+            case '_':
+                keyboard_report.keycode = 0x2D;
+                break;
+
+            case '.':
+                keyboard_report.modifier = 0;
+                keyboard_report.keycode = 0x37;
+                break;
+
             // send NULL for unsupported chars
             default:
                 keyboard_report.keycode = 0;
