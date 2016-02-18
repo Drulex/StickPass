@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name memotype)(type KiCad)(uri /home/drulex/PFE/software/references/memtype/schematic_pcb/electronic_design_kicad/memotype.pretty)(options "")(descr ""))
+)
