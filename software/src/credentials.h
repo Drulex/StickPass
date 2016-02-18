@@ -25,14 +25,17 @@ typedef struct {
     char idPassword[ID_PASSWORD_LEN + 1];
 } cred_t;
 
+extern unsigned char credCount;
+extern unsigned char credPtr;
+
+
 
 // prototypes
 int parseIdBlock(cred_t *cred, char *idBlock);
 int update_credential(cred_t cred);
-
-// global variables
-extern unsigned char credCount;
-
+void generateCredentialsTestData(char idBlock[64]);
+void getCredentialData(unsigned char idNum, unsigned char *buffer);
+void updateCredPtr(void);
 
 #endif
 
