@@ -36,11 +36,10 @@ unsigned char usbMsgData[8];
 // Debug flag. Set this to 1 after filling debugData buffer to send it
 volatile unsigned char debugFlag = 0;
 
-// To keep track of number of credentials in EEPROM
-unsigned char credCount;
-
 // To iterate through debugData when building interrupt_in messages
 volatile unsigned char msgPtr;
+
+static unsigned char capsCounter = 0;
 
 // init
 unsigned char pbCounter = 0;
@@ -153,27 +152,25 @@ int main() {
     PB_INIT();
     clearKeyboardReport();
 
+    char idBlockTest1[ID_BLOCK_LEN] = "linkedin\0\0alexandru.jora@gmail.com\0\0\0\0\0\0\0\0password123\0\0\0\0\0\0\0\0\0\0\0";
+    char idBlockTest2[ID_BLOCK_LEN] = "gmail\0\0\0\0\0test12345.test@gmail.com\0\0\0\0\0\0\0\0p23sword123456789\0\0\0\0\0";
+    char idBlockTest3[ID_BLOCK_LEN] = "somebank\0\0bank54645usert@babnk.com\0\0\0\0\0\0\0\0ftji8o!@#$3456789\0\0\0\0\0";
+
+    generateCredentialsTestData(idBlockTest1);
+    _delay_ms(200);
+    generateCredentialsTestData(idBlockTest2);
+    _delay_ms(200);
+    generateCredentialsTestData(idBlockTest3);
+
     uchar i;
 
-    // Variables initialization
-    msgPtr = 0;
-    credCount = 0;
+    credPtr = 0;
 
-    memset(usbMsgData, 0, 8);
     memset(debugData, 0, 64);
-    snprintf((char *)usbMsgData, 8, "usbMsg");
-    snprintf((char *)debugData, 64, "passwordTestData1234567890*&^$!#");
-    debugFlag = 1;
 
-/*
-    // some test data
-    char idBlockTest[ID_BLOCK_LEN] = "testappn\0\0test12345.jora@gmail.com\0\0\0\0\0\0\0\0password123\0\0\0\0\0\0\0\0\0\0\0";
-    cred_t cred;
-    parseIdBlock(&cred, idBlockTest);
-    update_credential(cred);
+    getCredentialData(1, &debugData[0]);
 
-    //eeprom_read_block((void *)debugData, (const void *)10, 32);
-*/
+    cli();
 
     LED_HIGH();
     usbInit();
@@ -195,6 +192,9 @@ int main() {
     // Enable global interrupts after re-enumeration
     sei();
 
+    if(credCount == 2)
+        LED_HIGH();
+
     while(1) {
         wdt_reset();
         usbPoll();
@@ -210,24 +210,21 @@ int main() {
         if(pbCounter < 255)
             pbCounter++;
 
-
-
         if(usbInterruptIsReady() && state != STATE_WAIT && !flagDone) {
-            uchar sendKey = debugData[msgPtr];
+            uchar sendKey = debugData[credPtr];
             switch(state) {
                 case STATE_SEND_KEY:
                     buildReport(sendKey);
                     state = STATE_RELEASE_KEY;
-                    //msgPtr++;
                     break;
 
                 case STATE_RELEASE_KEY:
                     buildReport(0);
-                    msgPtr++;
-                    if(debugData[msgPtr] == '\0') {
+                    credPtr++;
+                    if(debugData[credPtr] == '\0') {
                         flagDone = 1;
                         state = STATE_WAIT;
-                        msgPtr = 0;
+                        updateCredPtr();
                     }
 
                     else {
