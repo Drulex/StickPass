@@ -24,8 +24,9 @@
 #define SCROLL_LOCK 4
 
 #define STATE_WAIT 0
-#define STATE_SEND_KEY 1
-#define STATE_RELEASE_KEY 2
+#define STATE_SHORT_KEY 1
+#define STATE_LONG_KEY 2
+#define STATE_RELEASE_KEY 3
 
 // Buffer to send debug messages on interrupt endpoint 1
 unsigned char debugData[64];
@@ -39,7 +40,7 @@ volatile unsigned char debugFlag = 0;
 // To iterate through debugData when building interrupt_in messages
 volatile unsigned char msgPtr;
 
-static unsigned char capsCounter = 0;
+//static unsigned char capsCounter = 0;
 
 // init
 unsigned char pbCounter = 0;
@@ -49,6 +50,9 @@ unsigned char flagDone = 0;
 keyboard_report_t keyboard_report;
 volatile static uchar LED_state = 0xff;
 static unsigned char idleRate;
+
+// for PB long press detection
+static unsigned char pbHold = 0;
 
 // hid descriptor stored in flash
 const PROGMEM char usbHidReportDescriptor[USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH] = {
@@ -146,33 +150,49 @@ uchar getInterruptData(uchar *msg) {
     return i;
 }
 
+volatile int counter100ms;
+
+ISR(TIM1_OVF_vect) {
+    TCNT1 = 55;
+
+    // increment 100ms counter
+    counter100ms++;
+    // reset after 2s
+    if(counter100ms == 20)
+        counter100ms = 0;
+}
+
 int main() {
     // Modules initialization
     LED_Init();
+    LED_HIGH();
     PB_INIT();
     clearKeyboardReport();
 
+    // setup timer1 8192 prescaler
+    // start counting at 55
+    // overflow 10x per second
+    TCCR1 |=  (1<<CS13)|(1<<CS12)|(1<<CS11);
+    TCCR1 &= ~(1<<CS10);
+
+    TIMSK |= (1<<TOIE1);
+
+    counter100ms = 0;
+    TCNT1 = 0;
+
     char idBlockTest1[ID_BLOCK_LEN] = "linkedin\0\0alexandru.jora@gmail.com\0\0\0\0\0\0\0\0password123\0\0\0\0\0\0\0\0\0\0\0";
-    char idBlockTest2[ID_BLOCK_LEN] = "gmail\0\0\0\0\0test12345.test@gmail.com\0\0\0\0\0\0\0\0p23sword123456789\0\0\0\0\0";
-    char idBlockTest3[ID_BLOCK_LEN] = "somebank\0\0bank54645usert@babnk.com\0\0\0\0\0\0\0\0ftji8o!@#$3456789\0\0\0\0\0";
 
     generateCredentialsTestData(idBlockTest1);
-    _delay_ms(200);
-    generateCredentialsTestData(idBlockTest2);
-    _delay_ms(200);
-    generateCredentialsTestData(idBlockTest3);
-
-    uchar i;
 
     credPtr = 0;
 
     memset(debugData, 0, 64);
 
-    getCredentialData(1, &debugData[0]);
+    getCredentialData(0, &debugData[0]);
 
     cli();
 
-    LED_HIGH();
+    uchar i;
     usbInit();
 
     // enforce re-enumeration
@@ -192,18 +212,33 @@ int main() {
     // Enable global interrupts after re-enumeration
     sei();
 
-    if(credCount == 2)
-        LED_HIGH();
-
     while(1) {
         wdt_reset();
         usbPoll();
+
+        // PB press detection
         if(!(PINB & (1<<PB3))) {
+            // debouncing
             if(state == STATE_WAIT && pbCounter == 255) {
-                // proper send request
-                state = STATE_SEND_KEY;
+                // reset counter
+                counter100ms = 0;
+                while(!(PINB & (1<<PB3)) && !pbHold) {
+                    // waiting for PB long press event
+                    wdt_reset();
+                    // if PB is held for 1.5s
+                    if(counter100ms >= 15) {
+                        state = STATE_LONG_KEY;
+                        // send password
+                        credPtr = 42;
+                        pbHold = 1;
+                        flagDone = 0;
+                    }
+                }
+                // short PB press
+                state = STATE_SHORT_KEY;
                 flagDone = 0;
             }
+            pbHold = 0;
             pbCounter = 0;
         }
         // debouncing
@@ -213,10 +248,14 @@ int main() {
         if(usbInterruptIsReady() && state != STATE_WAIT && !flagDone) {
             uchar sendKey = debugData[credPtr];
             switch(state) {
-                case STATE_SEND_KEY:
+                case STATE_SHORT_KEY:
                     buildReport(sendKey);
                     state = STATE_RELEASE_KEY;
                     break;
+
+                case STATE_LONG_KEY:
+                    buildReport(sendKey);
+                    state = STATE_RELEASE_KEY;
 
                 case STATE_RELEASE_KEY:
                     buildReport(0);
@@ -224,11 +263,11 @@ int main() {
                     if(debugData[credPtr] == '\0') {
                         flagDone = 1;
                         state = STATE_WAIT;
-                        updateCredPtr();
+                        credPtr = 0;
                     }
 
                     else {
-                        state = STATE_SEND_KEY;
+                        state = STATE_SHORT_KEY;
                     }
 
                     break;
