@@ -13,7 +13,7 @@ CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -ffun
 CFLAGS += -std=gnu99 -Werror -mcall-prologues -fno-tree-scev-cprop -fno-split-wide-types
 LDFLAGS = -Wl,-Map=main.map,--relax,--gc-sections
 
-OBJECTS = usbdrv/usbdrv.o usbdrv/usbdrvasm.o usbdrv/oddebug.o main.o osccalASM.o credentials.o hid.o
+OBJECTS = usbdrv/usbdrv.o usbdrv/usbdrvasm.o usbdrv/oddebug.o main.o osccalASM.o credentials.o hid.o timer1.o
 
 COMPILE = avr-gcc -Wall -Os -DF_CPU=$(F_CPU) $(CFLAGS) -mmcu=$(DEVICE)
 
