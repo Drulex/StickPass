@@ -28,6 +28,9 @@
 #define STATE_LONG_KEY 2
 #define STATE_RELEASE_KEY 3
 
+#define USB_LED_OFF 0
+#define USB_LED_ON 1
+
 // Buffer to send debug messages on interrupt endpoint 1
 static unsigned char debugData[64];
 
@@ -104,6 +107,18 @@ usbMsgLen_t usbFunctionSetup(unsigned char data[8]) {
             // set idleRate as per spec
             case USBRQ_HID_SET_IDLE: // save idle rate as required by spec
                 idleRate = rq->wValue.bytes[1];
+                return 0;
+        }
+    }
+    // other requests
+    else {
+        switch(rq->bRequest) {
+            case USB_LED_ON:
+                LED_HIGH();
+                return 0;
+
+            case USB_LED_OFF:
+                LED_LOW();
                 return 0;
         }
     }
