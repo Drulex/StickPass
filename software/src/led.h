@@ -28,7 +28,7 @@
 #define USB_DATA_OUT    2
 
 // pushbutton init
-#define PB_INIT()       PORTB = (1<<PB3)
+#define PB_INIT()       PORTB |= (1<<PB3)
 
 
 #endif
