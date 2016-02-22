@@ -193,8 +193,9 @@ int main() {
                 while(!(PINB & (1<<PB3)) && !pbHold) {
                     // waiting for PB long press event
                     wdt_reset();
-                    // if PB is held for 1.5s
-                    if(counter100ms >= 15) {
+                    // if PB is held for 1.0s
+                    if(counter100ms >= 10) {
+                        counter100ms = 0;
                         state = STATE_LONG_KEY;
                         // send password
                         credPtr = 42;
