@@ -29,7 +29,6 @@ extern unsigned char credCount;
 extern unsigned char credPtr;
 
 
-
 // prototypes
 int parseIdBlock(cred_t *cred, char *idBlock);
 int update_credential(cred_t cred);

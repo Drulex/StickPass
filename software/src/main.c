@@ -8,7 +8,6 @@
  */
 
 #include <avr/io.h>
-#include <stdio.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
@@ -18,6 +17,7 @@
 #include "credentials.h"
 #include "led.h"
 #include "hid.h"
+#include "timer1.h"
 
 #define NUM_LOCK 1
 #define CAPS_LOCK 2
@@ -29,26 +29,15 @@
 #define STATE_RELEASE_KEY 3
 
 // Buffer to send debug messages on interrupt endpoint 1
-unsigned char debugData[64];
-
-// Buffer to reply to custom control messages on endpoint 0
-unsigned char usbMsgData[8];
-
-// Debug flag. Set this to 1 after filling debugData buffer to send it
-volatile unsigned char debugFlag = 0;
-
-// To iterate through debugData when building interrupt_in messages
-volatile unsigned char msgPtr;
-
-//static unsigned char capsCounter = 0;
+static unsigned char debugData[64];
 
 // init
-unsigned char pbCounter = 0;
-unsigned char state = STATE_WAIT;
-unsigned char flagDone = 0;
+static unsigned char pbCounter = 0;
+static unsigned char state = STATE_WAIT;
+static unsigned char flagDone = 0;
 
 keyboard_report_t keyboard_report;
-volatile static uchar LED_state = 0xff;
+volatile static unsigned char LED_state = 0xff;
 static unsigned char idleRate;
 
 // for PB long press detection
@@ -90,7 +79,7 @@ const PROGMEM char usbHidReportDescriptor[USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH] 
     0xc0                           // END_COLLECTION
 };
 
-usbMsgLen_t usbFunctionSetup(uchar data[8]) {
+usbMsgLen_t usbFunctionSetup(unsigned char data[8]) {
     usbRequest_t *rq = (void *)data;
 
     if((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_CLASS) {
@@ -121,7 +110,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
     return 0;
 }
 
-usbMsgLen_t usbFunctionWrite(uint8_t * data, uchar len) {
+usbMsgLen_t usbFunctionWrite(uint8_t * data, unsigned char len) {
     if (data[0] == LED_state)
         return 1;
     else
@@ -136,63 +125,27 @@ usbMsgLen_t usbFunctionWrite(uint8_t * data, uchar len) {
     return 1;
 }
 
-uchar getInterruptData(uchar *msg) {
-    uchar i;
-    for(i = 0; i < 8; i++) {
-        if(debugData[msgPtr] == '\0') {
-            msgPtr = 0;
-            debugFlag = 0;
-            return i;
-        }
-        msg[i] = debugData[msgPtr];
-        msgPtr++;
-    }
-    return i;
-}
-
-volatile int counter100ms;
-
-ISR(TIM1_OVF_vect) {
-    TCNT1 = 55;
-
-    // increment 100ms counter
-    counter100ms++;
-    // reset after 2s
-    if(counter100ms == 20)
-        counter100ms = 0;
-}
-
 int main() {
-    // Modules initialization
-    LED_Init();
-    LED_HIGH();
-    PB_INIT();
-    clearKeyboardReport();
-
-    // setup timer1 8192 prescaler
-    // start counting at 55
-    // overflow 10x per second
-    TCCR1 |=  (1<<CS13)|(1<<CS12)|(1<<CS11);
-    TCCR1 &= ~(1<<CS10);
-
-    TIMSK |= (1<<TOIE1);
-
-    counter100ms = 0;
-    TCNT1 = 0;
-
+    unsigned char i;
     char idBlockTest1[ID_BLOCK_LEN] = "linkedin\0\0alexandru.jora@gmail.com\0\0\0\0\0\0\0\0password123\0\0\0\0\0\0\0\0\0\0\0";
 
+    // Modules initialization
+    LED_Init();
+    timer1_Init();
+    PB_INIT();
+    LED_HIGH();
+
+    // debug
+    clearKeyboardReport();
     generateCredentialsTestData(idBlockTest1);
 
+    // var init
     credPtr = 0;
-
     memset(debugData, 0, 64);
-
     getCredentialData(0, &debugData[0]);
 
     cli();
 
-    uchar i;
     usbInit();
 
     // enforce re-enumeration
@@ -246,7 +199,7 @@ int main() {
             pbCounter++;
 
         if(usbInterruptIsReady() && state != STATE_WAIT && !flagDone) {
-            uchar sendKey = debugData[credPtr];
+            unsigned char sendKey = debugData[credPtr];
             switch(state) {
                 case STATE_SHORT_KEY:
                     buildReport(sendKey);
