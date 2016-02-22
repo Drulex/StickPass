@@ -40,7 +40,7 @@ volatile unsigned char debugFlag = 0;
 // To iterate through debugData when building interrupt_in messages
 volatile unsigned char msgPtr;
 
-static unsigned char capsCounter = 0;
+//static unsigned char capsCounter = 0;
 
 // init
 unsigned char pbCounter = 0;
@@ -181,26 +181,18 @@ int main() {
     TCNT1 = 0;
 
     char idBlockTest1[ID_BLOCK_LEN] = "linkedin\0\0alexandru.jora@gmail.com\0\0\0\0\0\0\0\0password123\0\0\0\0\0\0\0\0\0\0\0";
-    char idBlockTest2[ID_BLOCK_LEN] = "gmail\0\0\0\0\0test12345.test@gmail.com\0\0\0\0\0\0\0\0p23sword123456789\0\0\0\0\0";
-    char idBlockTest3[ID_BLOCK_LEN] = "somebank\0\0bank54645usert@babnk.com\0\0\0\0\0\0\0\0ftji8o!@#$3456789\0\0\0\0\0";
 
     generateCredentialsTestData(idBlockTest1);
-    _delay_ms(200);
-    generateCredentialsTestData(idBlockTest2);
-    _delay_ms(200);
-    generateCredentialsTestData(idBlockTest3);
-
-    uchar i;
 
     credPtr = 0;
 
     memset(debugData, 0, 64);
 
-    getCredentialData(1, &debugData[0]);
+    getCredentialData(0, &debugData[0]);
 
     cli();
 
-    LED_HIGH();
+    uchar i;
     usbInit();
 
     // enforce re-enumeration
@@ -219,9 +211,6 @@ int main() {
 
     // Enable global interrupts after re-enumeration
     sei();
-
-    if(credCount == 2)
-        LED_HIGH();
 
     while(1) {
         wdt_reset();
