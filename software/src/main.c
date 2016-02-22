@@ -146,11 +146,35 @@ uchar getInterruptData(uchar *msg) {
     return i;
 }
 
+volatile int counter100ms;
+
+ISR(TIM1_OVF_vect) {
+    TCNT1 = 55;
+
+    // increment 100ms counter
+    counter100ms++;
+    // reset after 2s
+    if(counter100ms == 20)
+        counter100ms = 0;
+}
+
 int main() {
     // Modules initialization
     LED_Init();
+    LED_HIGH();
     PB_INIT();
     clearKeyboardReport();
+
+    // setup timer1 8192 prescaler
+    // start counting at 55
+    // overflow 10x per second
+    TCCR1 |=  (1<<CS13)|(1<<CS12)|(1<<CS11);
+    TCCR1 &= ~(1<<CS10);
+
+    TIMSK |= (1<<TOIE1);
+
+    counter100ms = 0;
+    TCNT1 = 0;
 
     char idBlockTest1[ID_BLOCK_LEN] = "linkedin\0\0alexandru.jora@gmail.com\0\0\0\0\0\0\0\0password123\0\0\0\0\0\0\0\0\0\0\0";
     char idBlockTest2[ID_BLOCK_LEN] = "gmail\0\0\0\0\0test12345.test@gmail.com\0\0\0\0\0\0\0\0p23sword123456789\0\0\0\0\0";
