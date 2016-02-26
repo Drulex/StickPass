@@ -27,14 +27,16 @@ typedef struct {
 
 extern unsigned char credCount;
 extern unsigned char credPtr;
+extern cred_t cred;
 
 
 // prototypes
 int parseIdBlock(cred_t *cred, char *idBlock);
-int update_credential(cred_t cred);
+int update_credential(void);
 void generateCredentialsTestData(char idBlock[64]);
 void getCredentialData(unsigned char idNum, unsigned char *buffer);
 void updateCredPtr(void);
+void clearCred(void);
 
 #endif
 

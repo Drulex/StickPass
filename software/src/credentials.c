@@ -67,25 +67,28 @@ int parseIdBlock(cred_t *cred, char *idBlock) {
     return 0;
 }
 
-int update_credential(cred_t cred) {
+int update_credential(void) {
 
-    int memPtr;
     if(credCount == MAX_CRED)
         return -1;
+    int memPtr;
+    unsigned char idNameLen = sizeof(cred.idName);
+    unsigned char idUsernameLen = sizeof(cred.idUsername);
+    unsigned char idPasswordLen = sizeof(cred.idPassword);
 
     // eeprom credential memory pointer
     memPtr = (credCount * ID_BLOCK_LEN);
 
     // write idName to eeprom and increment memPtr to idUsername
-    eeprom_update_block((const void *)cred.idName, (void *)memPtr, ID_NAME_LEN);
+    eeprom_update_block((const void *)cred.idName, (void *)memPtr, idNameLen);
     memPtr += ID_NAME_LEN;
 
     // write idUsername to eeprom and increment memPtr to idPassword
-    eeprom_update_block((const void *)cred.idUsername, (void *)memPtr, ID_USERNAME_LEN);
+    eeprom_update_block((const void *)cred.idUsername, (void *)memPtr, idUsernameLen);
     memPtr += ID_USERNAME_LEN;
 
     // write idPassword to eeprom
-    eeprom_update_block((const void *)cred.idPassword, (void *)memPtr, ID_PASSWORD_LEN);
+    eeprom_update_block((const void *)cred.idPassword, (void *)memPtr, idPasswordLen);
 
     // increment global var credCount
     credCount++;
@@ -98,7 +101,7 @@ void generateCredentialsTestData(char idBlock[64]) {
     cred_t cred;
 
     parseIdBlock(&cred, idBlock);
-    update_credential(cred);
+    update_credential();
 }
 
 void getCredentialData(unsigned char idNum, unsigned char *buffer) {
@@ -127,3 +130,11 @@ void updateCredPtr(void) {
     else if(credPtr >= 42)
         credPtr = 0;
 }
+
+void clearCred(void) {
+    unsigned char i;
+    for(i = 0; i < sizeof(cred); i++) {
+        ((unsigned char *)&cred)[i] = 0;
+    }
+}
+
