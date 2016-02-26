@@ -64,8 +64,11 @@ int main(int argc, char **argv) {
         char tmpBuffer[8];
         int state = STATE_ID_UPLOAD_INIT;
         char idName[10] = "gmail";
+        //char idName[10] = "linkedin";
         char idUsername[32] = "alexandru.jora@gmail.com";
+        //char idUsername[32] = "user@@linkedinservice.com";
         char idPassword[22] = "hellothisisapassword";
+        //char idPassword[22] = "youmustbekiddingmate";
 
         flagDone = 0;
         memset(tmpBuffer, 0, sizeof(tmpBuffer));
