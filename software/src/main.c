@@ -193,7 +193,8 @@ usbMsgLen_t usbFunctionWrite(uint8_t * data, unsigned char len) {
                 //idMsgPtr++;
                 flagCredReady = 1;
                 LED_TOGGLE();
-                //update_credential();
+                update_credential();
+                credCount++;
                 return 1;
     }
 
@@ -216,7 +217,6 @@ int main() {
     // var init
     credPtr = 0;
     memset(debugData, 0, 64 + 1);
-    //getCredentialData(0, &debugData[0]);
 
     cli();
 
@@ -242,23 +242,12 @@ int main() {
     while(1) {
         wdt_reset();
         usbPoll();
+
+        j = 0;
         if(flagCredReady) {
-            LED_TOGGLE();
-            j = 0;
-            for(i = 0; i < 10; i++) {
-                debugData[j] = cred.idName[i];
-                j++;
-            }
-            for(i = 0; i < 32; i++) {
-                debugData[j] = cred.idUsername[i];
-                j++;
-            }
-            for(i = 0; i < 22; i++) {
-                debugData[j] = cred.idPassword[i];
-                j++;
-            }
-            LED_TOGGLE();
+            getCredentialData(j, &debugData[0]);
             flagCredReady = 0;
+            j++;
         }
 
         // PB press detection
