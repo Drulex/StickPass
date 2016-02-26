@@ -28,18 +28,36 @@
 #define STATE_LONG_KEY 2
 #define STATE_RELEASE_KEY 3
 
+
 #define USB_LED_OFF 0
 #define USB_LED_ON 1
+#define USB_DATA_OUT 2
+
+#define STATE_ID_UPLOAD 3
+#define STATE_ID_UPLOAD_INIT 4
+#define STATE_ID_NAME_SEND 5
+#define STATE_ID_NAME_DONE 6
+#define STATE_ID_USERNAME_SEND 7
+#define STATE_ID_USERNAME_DONE 8
+#define STATE_ID_PASS_SEND 9
+#define STATE_ID_PASS_DONE 10
+#define STATE_ID_UPLOAD_DONE 11
+
 
 // Buffer to send debug messages on interrupt endpoint 1
-static unsigned char debugData[64];
+static unsigned char debugData[64 + 1];
 
 // init
 static unsigned char pbCounter = 0;
 static unsigned char state = STATE_WAIT;
 static unsigned char flagDone = 0;
+static unsigned char flagCredReady = 0;
+static unsigned char idMsgPtr = 0;
+static unsigned char idState;
 
 keyboard_report_t keyboard_report;
+cred_t cred;
+
 volatile static unsigned char LED_state = 0xff;
 static unsigned char idleRate;
 
@@ -120,29 +138,70 @@ usbMsgLen_t usbFunctionSetup(unsigned char data[8]) {
             case USB_LED_OFF:
                 LED_LOW();
                 return 0;
+
+            case STATE_ID_UPLOAD:
+                return USB_NO_MSG;
         }
     }
     return 0;
 }
 
-usbMsgLen_t usbFunctionWrite(uint8_t * data, unsigned char len) {
-    if (data[0] == LED_state)
-        return 1;
-    else
-        LED_state = data[0];
 
-    // LED state changed
-    if(LED_state & CAPS_LOCK)
-        LED_HIGH();
-    else
-        LED_LOW();
+usbMsgLen_t usbFunctionWrite(uint8_t * data, unsigned char len) {
+    unsigned char i;
+    idState = data[0];
+    switch(idState) {
+            case STATE_ID_UPLOAD_INIT:
+                // clear credentials structure and reset msg pointer
+                clearCred();
+                idMsgPtr = 0;
+                return 1;
+
+            case STATE_ID_NAME_SEND:
+                for(i = 1; i < len; i++) {
+                    cred.idName[idMsgPtr] = data[i];
+                    idMsgPtr++;
+                }
+                return 1;
+
+            case STATE_ID_NAME_DONE:
+                //cred.idName[idMsgPtr] = '\0';
+                idMsgPtr = 0;
+                return 1;
+
+            case STATE_ID_USERNAME_SEND:
+                for(i = 1; i < len; i++) {
+                    cred.idUsername[idMsgPtr] = data[i];
+                    idMsgPtr++;
+                }
+                return 1;
+
+            case STATE_ID_USERNAME_DONE:
+                //cred.idUsername[idMsgPtr] = '\0';
+                idMsgPtr = 0;
+                return 1;
+
+            case STATE_ID_PASS_SEND:
+                for(i = 1; i < len; i++) {
+                    cred.idPassword[idMsgPtr] = data[i];
+                    idMsgPtr++;
+                }
+                return 1;
+
+            case STATE_ID_PASS_DONE:
+                //cred.idPassword[idMsgPtr] = '\0';
+                //idMsgPtr++;
+                flagCredReady = 1;
+                LED_TOGGLE();
+                //update_credential();
+                return 1;
+    }
 
     return 1;
 }
 
 int main() {
-    unsigned char i;
-    char idBlockTest1[ID_BLOCK_LEN] = "linkedin\0\0alexandru.jora@gmail.com\0\0\0\0\0\0\0\0password123\0\0\0\0\0\0\0\0\0\0\0";
+    unsigned char i, j;
 
     // Modules initialization
     LED_Init();
@@ -152,12 +211,12 @@ int main() {
 
     // debug
     clearKeyboardReport();
-    generateCredentialsTestData(idBlockTest1);
+    //generateCredentialsTestData(idBlockTest1);
 
     // var init
     credPtr = 0;
-    memset(debugData, 0, 64);
-    getCredentialData(0, &debugData[0]);
+    memset(debugData, 0, 64 + 1);
+    //getCredentialData(0, &debugData[0]);
 
     cli();
 
@@ -183,6 +242,24 @@ int main() {
     while(1) {
         wdt_reset();
         usbPoll();
+        if(flagCredReady) {
+            LED_TOGGLE();
+            j = 0;
+            for(i = 0; i < 10; i++) {
+                debugData[j] = cred.idName[i];
+                j++;
+            }
+            for(i = 0; i < 32; i++) {
+                debugData[j] = cred.idUsername[i];
+                j++;
+            }
+            for(i = 0; i < 22; i++) {
+                debugData[j] = cred.idPassword[i];
+                j++;
+            }
+            LED_TOGGLE();
+            flagCredReady = 0;
+        }
 
         // PB press detection
         if(!(PINB & (1<<PB3))) {
@@ -232,7 +309,8 @@ int main() {
                     if(debugData[credPtr] == '\0') {
                         flagDone = 1;
                         state = STATE_WAIT;
-                        credPtr = 0;
+                        //credPtr = 0;
+                        updateCredPtr();
                     }
 
                     else {

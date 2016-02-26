@@ -60,83 +60,151 @@ int main(int argc, char **argv) {
     }
 
     else if(strcmp(argv[1], "id_upload") == 0) {
-        int len, i, flagDone;
-        char key;
+        int i, flagDone, flagFull, bufPtr;
+        char tmpBuffer[8];
         int state = STATE_ID_UPLOAD_INIT;
-        char idName[10] = "someapp";
-        char idUsername[32] = "testuser@testapp.com";
-        char idPassword[22] = "password123test";
+        char idName[10] = "gmail";
+        char idUsername[32] = "alexandru.jora@gmail.com";
+        char idPassword[22] = "hellothisisapassword";
 
         flagDone = 0;
+        memset(tmpBuffer, 0, sizeof(tmpBuffer));
+        syslog(LOG_INFO, "Ready to roll");
+
 
         while(!flagDone) {
             switch(state) {
                 // send empty msg to signal that id upload has been initiated
                 case STATE_ID_UPLOAD_INIT:
+                    memset(tmpBuffer, 0, sizeof(tmpBuffer));
+                    tmpBuffer[0] = STATE_ID_UPLOAD_INIT;
                     nBytes = usb_control_msg(handle,
                              USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-                             STATE_ID_UPLOAD_INIT, 0, 0, 0, 0, 5000);
+                             STATE_ID_UPLOAD, 0, 0, (char *)tmpBuffer, sizeof(tmpBuffer), 5000);
                     state = STATE_ID_NAME_SEND;
-                    syslog(LOG_INFO, "Sent signal to initiade id upload");
+                    syslog(LOG_INFO, "Sent signal to initiate id upload");
                     break;
 
                 // send the idName
                 case STATE_ID_NAME_SEND:
-                    // send idName one byte at a time
-                    for(i = 0; idName[i] != '\0'; i++) {
-                        key = idName[i];
+                    memset(tmpBuffer, 0, sizeof(tmpBuffer));
+                    flagFull = 0;
+                    bufPtr = 0;
+
+                    // send in chunks of 8 bytes
+                    while(!flagFull) {
+                        // store state in first byte of msg
+                        tmpBuffer[0] = STATE_ID_NAME_SEND;
+
+                        // fill rest of buffer
+                        for(i = 1; idName[bufPtr] != '\0' && i < 8; i++) {
+                            syslog(LOG_DEBUG, "char=%c", idName[bufPtr]);
+                            tmpBuffer[i] = idName[bufPtr];
+                            bufPtr++;
+                        }
+                        if(idName[bufPtr] == '\0') {
+                            syslog(LOG_DEBUG, "reached NULL!");
+                            flagFull = 1;
+                        }
+
                         nBytes = usb_control_msg(handle,
-                                 USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-                                 STATE_ID_NAME_SEND, 0, 0, (char *) &key, 1, 5000);
-                        syslog(LOG_INFO, "Sent %d bytes to USB device.\nDATA=%c", nBytes, key);
+                                     USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
+                                     STATE_ID_UPLOAD, 0, 0, (char *)tmpBuffer, i, 5000);
+                        syslog(LOG_INFO, "Sent %d bytes to USB device.\nDATA=%s", nBytes, tmpBuffer);
                     }
                     state = STATE_ID_NAME_DONE;
                     break;
 
                 case STATE_ID_NAME_DONE:
+                    memset(tmpBuffer, 0, sizeof(tmpBuffer));
+                    tmpBuffer[0] = STATE_ID_NAME_DONE;
                     nBytes = usb_control_msg(handle,
                              USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-                             STATE_ID_NAME_DONE, 0, 0, 0, 0, 5000);
+                             STATE_ID_UPLOAD, 0, 0, (char *)tmpBuffer, sizeof(tmpBuffer), 5000);
                     state = STATE_ID_USERNAME_SEND;
                     syslog(LOG_INFO, "Sent signal for idName done");
                     break;
 
                 case STATE_ID_USERNAME_SEND:
-                    // send idUsername one byte at a time
-                    for(i = 0; idUsername[i] != '\0'; i++) {
-                        key = idUsername[i];
+                    memset(tmpBuffer, 0, sizeof(tmpBuffer));
+                    flagFull = 0;
+                    bufPtr = 0;
+
+                    // send in chunks of 8 bytes
+                    while(!flagFull) {
+                        // store state in first byte of msg
+                        tmpBuffer[0] = STATE_ID_USERNAME_SEND;
+
+                        // fill rest of buffer
+                        for(i = 1; idUsername[bufPtr] != '\0' && i < 8; i++) {
+                            syslog(LOG_DEBUG, "char=%c", idUsername[bufPtr]);
+                            tmpBuffer[i] = idUsername[bufPtr];
+                            bufPtr++;
+                        }
+
+                        if(idUsername[bufPtr] == '\0') {
+                            syslog(LOG_DEBUG, "reached NULL!");
+                            flagFull = 1;
+                        }
+
+                        syslog(LOG_INFO, "Preparing to send:%s", tmpBuffer);
                         nBytes = usb_control_msg(handle,
-                                 USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-                                 STATE_ID_USERNAME_SEND, 0, 0, (char *) &key, 1, 5000);
-                        syslog(LOG_INFO, "Sent %d bytes to USB device.\nDATA=%c", nBytes, key);
+                                     USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
+                                     STATE_ID_UPLOAD, 0, 0, (char *)tmpBuffer, i, 5000);
+                        syslog(LOG_INFO, "Sent %d bytes to USB device.\nDATA=%s", nBytes, tmpBuffer);
                     }
                     state = STATE_ID_USERNAME_DONE;
                     break;
 
                 case STATE_ID_USERNAME_DONE:
+                    memset(tmpBuffer, 0, sizeof(tmpBuffer));
+                    tmpBuffer[0] = STATE_ID_USERNAME_DONE;
+                    syslog(LOG_INFO, "Preparing to send:%s", tmpBuffer);
                     nBytes = usb_control_msg(handle,
                              USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-                             STATE_ID_USERNAME_DONE, 0, 0, 0, 0, 5000);
+                             STATE_ID_UPLOAD, 0, 0, (char *)tmpBuffer, sizeof(tmpBuffer), 5000);
                     state = STATE_ID_PASS_SEND;
                     syslog(LOG_INFO, "Sent signal for idUsername done");
                     break;
 
                 case STATE_ID_PASS_SEND:
-                    // send idPassword one byte at a time
-                    for(i = 0; idPassword[i] != '\0'; i++) {
-                        key = idPassword[i];
+                    memset(tmpBuffer, 0, sizeof(tmpBuffer));
+                    flagFull = 0;
+                    bufPtr = 0;
+
+                    // send in chunks of 8 bytes
+                    while(!flagFull) {
+                        // store state in first byte of msg
+                        tmpBuffer[0] = STATE_ID_PASS_SEND;
+
+                        // fill rest of buffer
+                        for(i = 1; idPassword[bufPtr] != '\0' && i < 8; i++) {
+                            syslog(LOG_DEBUG, "char=%c", idPassword[bufPtr]);
+                            tmpBuffer[i] = idPassword[bufPtr];
+                            bufPtr++;
+                        }
+
+                        if(idPassword[bufPtr] == '\0') {
+                            syslog(LOG_DEBUG, "reached NULL!");
+                            flagFull = 1;
+                        }
+
+                        syslog(LOG_INFO, "Preparing to send:%s", tmpBuffer);
                         nBytes = usb_control_msg(handle,
-                                 USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-                                 STATE_ID_PASS_SEND, 0, 0, (char *) &key, 1, 5000);
-                        syslog(LOG_INFO, "Sent %d bytes to USB device.\nDATA=%c", nBytes, key);
+                                     USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
+                                     STATE_ID_UPLOAD, 0, 0, (char *)tmpBuffer, i, 5000);
+                        syslog(LOG_INFO, "Sent %d bytes to USB device.\nDATA=%s", nBytes, tmpBuffer);
                     }
                     state = STATE_ID_PASS_DONE;
                     break;
 
                 case STATE_ID_PASS_DONE:
+                    memset(tmpBuffer, 0, sizeof(tmpBuffer));
+                    tmpBuffer[0] = STATE_ID_PASS_DONE;
+                    syslog(LOG_INFO, "Preparing to send:%s", tmpBuffer);
                     nBytes = usb_control_msg(handle,
                              USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-                             STATE_ID_PASS_DONE, 0, 0, 0, 0, 5000);
+                             STATE_ID_UPLOAD, 0, 0, (char *)tmpBuffer, sizeof(tmpBuffer), 5000);
                     flagDone = 1;
                     syslog(LOG_INFO, "Sent signal for idPassword done");
                     break;
