@@ -27,11 +27,18 @@
 #define STATE_SHORT_KEY 1
 #define STATE_LONG_KEY 2
 #define STATE_RELEASE_KEY 3
+#define STATE_CLEAR_KEY 4
+#define STATE_SEND_TAB 5
 
 
 #define USB_LED_OFF 0
 #define USB_LED_ON 1
 #define USB_DATA_OUT 2
+
+#define KEY_BS  0x08
+#define KEY_TAB 0x09
+
+
 
 #define STATE_ID_UPLOAD 3
 #define STATE_ID_UPLOAD_INIT 4
@@ -52,8 +59,11 @@ static unsigned char pbCounter = 0;
 static unsigned char state = STATE_WAIT;
 static unsigned char flagDone = 0;
 static unsigned char flagCredReady = 0;
+static unsigned char flagKeyCleared = 1;
+static unsigned char flagInjectId = 0;
 static unsigned char idMsgPtr = 0;
 static unsigned char idState;
+static unsigned char clearKeyCnt = 0;
 
 keyboard_report_t keyboard_report;
 cred_t cred;
@@ -146,7 +156,12 @@ usbMsgLen_t usbFunctionSetup(unsigned char data[8]) {
     return 0;
 }
 
-
+/*
+ * This function is called when usbFunctionSetup return USB_NO_MSG
+ * We can only receive chunks of 8 bytes so the state value
+ * is stored in the first byte of the data buffer
+ *
+ */
 usbMsgLen_t usbFunctionWrite(uint8_t * data, unsigned char len) {
     unsigned char i;
     idState = data[0];
@@ -192,7 +207,6 @@ usbMsgLen_t usbFunctionWrite(uint8_t * data, unsigned char len) {
                 //cred.idPassword[idMsgPtr] = '\0';
                 //idMsgPtr++;
                 flagCredReady = 1;
-                LED_TOGGLE();
                 update_credential();
                 credCount++;
                 return 1;
@@ -263,10 +277,11 @@ int main() {
                     if(counter100ms >= 10) {
                         counter100ms = 0;
                         state = STATE_LONG_KEY;
-                        // send password
-                        credPtr = 42;
+                        // send idUsername
+                        credPtr = 10;
                         pbHold = 1;
                         flagDone = 0;
+                        flagInjectId = 1;
                     }
                 }
                 // short PB press
@@ -284,28 +299,69 @@ int main() {
             unsigned char sendKey = debugData[credPtr];
             switch(state) {
                 case STATE_SHORT_KEY:
-                    buildReport(sendKey);
+                    // if we haven't cleared the idName from the screen
+                    if(!flagKeyCleared) {
+                        // clear 10 keys from screen (max size of idName)
+                        if(clearKeyCnt == 9) {
+                            clearKeyCnt = 0;
+                            flagKeyCleared = 1;
+                            buildReport(sendKey);
+                        }
+                        else {
+                            buildReport(KEY_BS);
+                            clearKeyCnt++;
+                        }
+                    }
+                    else
+                        buildReport(sendKey);
+
                     state = STATE_RELEASE_KEY;
                     break;
 
                 case STATE_LONG_KEY:
                     buildReport(sendKey);
                     state = STATE_RELEASE_KEY;
+                    break;
 
                 case STATE_RELEASE_KEY:
+                    // always send empty report when done sending a key
                     buildReport(0);
-                    credPtr++;
+
+                    // upgrade credPtr only if we are not sending backspace key
+                    if(flagKeyCleared)
+                        credPtr++;
+
+                    // if the next char is NULL
                     if(debugData[credPtr] == '\0') {
-                        flagDone = 1;
-                        state = STATE_WAIT;
-                        //credPtr = 0;
-                        updateCredPtr();
+
+                        // if we are in id injection mode this means we just sent the username
+                        // therefore we need to send the tab character
+                        if(flagInjectId) {
+                            state = STATE_SEND_TAB;
+                            break;
+                        }
+
+                        // this means we are done sending
+                        else {
+                            flagDone = 1;
+                            credPtr = 0;
+                            flagKeyCleared = 0;
+                            state = STATE_WAIT;
+                        }
                     }
 
+                    // the next char is valid so we go back to state_short_key
                     else {
                         state = STATE_SHORT_KEY;
                     }
+                    break;
 
+                case STATE_SEND_TAB:
+                    // send tab character
+                    buildReport(KEY_TAB);
+                    credPtr = 41;
+                    state = STATE_RELEASE_KEY;
+                    flagInjectId = 0;
                     break;
 
                 default:
