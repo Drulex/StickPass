@@ -21,6 +21,19 @@ void buildReport(unsigned char sendKey) {
         return;
     }
 
+    // handle backspace
+    if(sendKey == KEY_BS) {
+        keyboard_report.modifier = 2;
+        keyboard_report.keycode = 0x2A;
+        return;
+    }
+
+    // handle TAB
+    if(sendKey == KEY_TAB) {
+        keyboard_report.keycode = 0x2B;
+        return;
+    }
+
     // handle lowercase chars
     if(sendKey >= 'a' && sendKey <= 'z') {
         keyboard_report.keycode = 4 + (sendKey - 'a');
@@ -93,6 +106,11 @@ void buildReport(unsigned char sendKey) {
             case '.':
                 keyboard_report.modifier = 0;
                 keyboard_report.keycode = 0x37;
+                break;
+
+            case ' ':
+                keyboard_report.modifier = 0;
+                keyboard_report.keycode = 0x2C;
                 break;
 
             // send NULL for unsupported chars

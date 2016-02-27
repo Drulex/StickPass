@@ -11,6 +11,8 @@
 #define HID_H
 
 #include <stdio.h>
+#define KEY_BS  0x08
+#define KEY_TAB 0x09
 
 typedef struct {
         uint8_t modifier;
