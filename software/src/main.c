@@ -168,7 +168,7 @@ usbMsgLen_t usbFunctionWrite(uint8_t * data, unsigned char len) {
     switch(idState) {
             case STATE_ID_UPLOAD_INIT:
                 // clear credentials structure and reset msg pointer
-                clearCred();
+                clearCred(&cred);
                 idMsgPtr = 0;
                 return 1;
 
@@ -207,7 +207,7 @@ usbMsgLen_t usbFunctionWrite(uint8_t * data, unsigned char len) {
                 //cred.idPassword[idMsgPtr] = '\0';
                 //idMsgPtr++;
                 flagCredReady = 1;
-                update_credential();
+                update_credential(cred);
                 credCount++;
                 return 1;
     }
@@ -224,12 +224,12 @@ int main() {
     PB_INIT();
     LED_HIGH();
 
-    // debug
     clearKeyboardReport();
-    //generateCredentialsTestData(idBlockTest1);
+
+    cred_t cred;
+    clearCred(&cred);
 
     // var init
-    credPtr = 0;
     memset(debugData, 0, 64 + 1);
 
     cli();
@@ -259,7 +259,7 @@ int main() {
         usbPoll();
 
         if(flagCredReady) {
-            getCredentialData(j, &debugData[0]);
+            getCredentialData(j, &cred);
             flagCredReady = 0;
             j++;
         }
@@ -296,7 +296,7 @@ int main() {
             pbCounter++;
 
         if(usbInterruptIsReady() && state != STATE_WAIT && !flagDone) {
-            unsigned char sendKey = debugData[credPtr];
+            unsigned char sendKey = cred.idName[credPtr];
             switch(state) {
                 case STATE_SHORT_KEY:
                     // if we haven't cleared the idName from the screen
@@ -332,7 +332,7 @@ int main() {
                         credPtr++;
 
                     // if the next char is NULL
-                    if(debugData[credPtr] == '\0' || (credPtr == 10 && !flagInjectId) || (credPtr == 42 && flagCredReady)) {
+                    if(cred.idName[credPtr] == '\0' || (credPtr == 10 && !flagInjectId) || (credPtr == 42 && flagCredReady)) {
 
                         // if we are in id injection mode this means we just sent the username
                         // therefore we need to send the tab character

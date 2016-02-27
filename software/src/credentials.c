@@ -51,7 +51,7 @@
 unsigned char credCount = 0;
 unsigned char credPtr;
 
-int update_credential(void) {
+int update_credential(cred_t cred) {
 
     if(credCount == MAX_CRED)
         return -1;
@@ -80,34 +80,26 @@ int update_credential(void) {
     return 0;
 }
 
-void getCredentialData(unsigned char idNum, unsigned char *buffer) {
+void getCredentialData(unsigned char idNum, cred_t *cred) {
     int memPtr;
+
+    // read idName
     memPtr = (idNum * ID_BLOCK_LEN);
+    eeprom_read_block((void *)cred->idName, (const void *)memPtr, ID_NAME_LEN);
+    cred->idName[ID_NAME_LEN] = '\0';
 
-    eeprom_read_block((void *)buffer, (const void *)memPtr, 64);
+    // read idUsername
+    memPtr += 10;
+    eeprom_read_block((void *)cred->idUsername, (const void *)memPtr, ID_USERNAME_LEN);
+    cred->idUsername[ID_USERNAME_LEN] = '\0';
+
+    // read idPassword
+    memPtr += 32;
+    eeprom_read_block((void *)cred->idPassword, (const void *)memPtr, ID_PASSWORD_LEN);
+    cred->idPassword[ID_PASSWORD_LEN] = '\0';
 }
 
-/*
- * When iterating through credentials we need to keep track of where the ptr
- * is inside the buffer because each element is padded with '\0'. We know that
- * when we reach one it means the end of current id element so we jump to the
- * next one. If we are at the password we reset to 0 as this is the last element.
- *
- */
-void updateCredPtr(void) {
-    // if we sent ID_NAME we jump to ID_USERNAME
-    if(credPtr <= 9)
-        credPtr = 10;
-
-    // if we sent ID_USERNAME we jump to ID_PASSWORD
-    else if(credPtr >=10 && credPtr <= 41)
-        credPtr = 42;
-
-    else if(credPtr >= 42)
-        credPtr = 0;
-}
-
-void clearCred(void) {
+void clearCred(cred_t *cred) {
     unsigned char i;
     for(i = 0; i < sizeof(cred); i++) {
         ((unsigned char *)&cred)[i] = 0;
