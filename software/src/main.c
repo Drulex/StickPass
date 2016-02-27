@@ -268,7 +268,10 @@ int main() {
         if(!(PINB & (1<<PB3))) {
             // debouncing
             if(state == STATE_WAIT && pbCounter == 255) {
-                // reset counter
+                // short PB press
+                state = STATE_INIT;
+                flagDone = 0;// reset counter
+
                 counter100ms = 0;
                 while(!(PINB & (1<<PB3)) && !pbHold) {
                     // waiting for PB long press event
@@ -278,15 +281,10 @@ int main() {
                         counter100ms = 0;
                         state = STATE_LONG_KEY;
                         // send idUsername
-                        credPtr = 10;
                         pbHold = 1;
                         flagDone = 0;
-                        flagInjectId = 1;
                     }
                 }
-                // short PB press
-                state = STATE_SHORT_KEY;
-                flagDone = 0;
             }
             pbHold = 0;
             pbCounter = 0;
