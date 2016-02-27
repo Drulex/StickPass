@@ -252,12 +252,12 @@ int main() {
 
     // Enable global interrupts after re-enumeration
     sei();
+    j = 0;
 
     while(1) {
         wdt_reset();
         usbPoll();
 
-        j = 0;
         if(flagCredReady) {
             getCredentialData(j, &debugData[0]);
             flagCredReady = 0;
@@ -302,7 +302,7 @@ int main() {
                     // if we haven't cleared the idName from the screen
                     if(!flagKeyCleared) {
                         // clear 10 keys from screen (max size of idName)
-                        if(clearKeyCnt == 9) {
+                        if(clearKeyCnt == 10) {
                             clearKeyCnt = 0;
                             flagKeyCleared = 1;
                             buildReport(sendKey);
@@ -332,7 +332,7 @@ int main() {
                         credPtr++;
 
                     // if the next char is NULL
-                    if(debugData[credPtr] == '\0') {
+                    if(debugData[credPtr] == '\0' || (credPtr == 10 && !flagInjectId) || (credPtr == 42 && flagCredReady)) {
 
                         // if we are in id injection mode this means we just sent the username
                         // therefore we need to send the tab character
