@@ -19,27 +19,22 @@
 #include "hid.h"
 #include "timer1.h"
 
-#define NUM_LOCK 1
-#define CAPS_LOCK 2
-#define SCROLL_LOCK 4
-
+// states for id cycling and injection
 #define STATE_WAIT 0
-#define STATE_SHORT_KEY 1
-#define STATE_LONG_KEY 2
-#define STATE_RELEASE_KEY 3
-#define STATE_CLEAR_KEY 4
-#define STATE_SEND_TAB 5
+#define STATE_INIT 1
+#define STATE_SEND_ID_NAME 2
+#define STATE_RELEASE_ID_NAME 3
+#define STATE_LONG_KEY 4
+#define STATE_SEND_ID_USERNAME 5
+#define STATE_RELEASE_ID_USERNAME 6
+#define STATE_SEND_TAB 7
+#define STATE_RELEASE_TAB 8
+#define STATE_SEND_ID_PASSWORD 9
+#define STATE_RELEASE_ID_PASSWORD 10
 
-
+// states for usb_msg parsing
 #define USB_LED_OFF 0
 #define USB_LED_ON 1
-#define USB_DATA_OUT 2
-
-#define KEY_BS  0x08
-#define KEY_TAB 0x09
-
-
-
 #define STATE_ID_UPLOAD 3
 #define STATE_ID_UPLOAD_INIT 4
 #define STATE_ID_NAME_SEND 5
@@ -50,9 +45,8 @@
 #define STATE_ID_PASS_DONE 10
 #define STATE_ID_UPLOAD_DONE 11
 
-
-// Buffer to send debug messages on interrupt endpoint 1
-static unsigned char debugData[64 + 1];
+#define KEY_BS  0x08
+#define KEY_TAB 0x09
 
 // init
 static unsigned char pbCounter = 0;
@@ -60,13 +54,11 @@ static unsigned char state = STATE_WAIT;
 static unsigned char flagDone = 0;
 static unsigned char flagCredReady = 0;
 static unsigned char flagKeyCleared = 1;
-static unsigned char flagInjectId = 0;
 static unsigned char idMsgPtr = 0;
 static unsigned char idState;
 static unsigned char clearKeyCnt = 0;
 
 keyboard_report_t keyboard_report;
-cred_t cred;
 
 volatile static unsigned char LED_state = 0xff;
 static unsigned char idleRate;
@@ -165,49 +157,46 @@ usbMsgLen_t usbFunctionSetup(unsigned char data[8]) {
 usbMsgLen_t usbFunctionWrite(uint8_t * data, unsigned char len) {
     unsigned char i;
     idState = data[0];
+    cred_t credReceived;
     switch(idState) {
             case STATE_ID_UPLOAD_INIT:
                 // clear credentials structure and reset msg pointer
-                clearCred(&cred);
+                clearCred(&credReceived);
                 idMsgPtr = 0;
                 return 1;
 
             case STATE_ID_NAME_SEND:
                 for(i = 1; i < len; i++) {
-                    cred.idName[idMsgPtr] = data[i];
+                    credReceived.idName[idMsgPtr] = data[i];
                     idMsgPtr++;
                 }
                 return 1;
 
             case STATE_ID_NAME_DONE:
-                //cred.idName[idMsgPtr] = '\0';
                 idMsgPtr = 0;
                 return 1;
 
             case STATE_ID_USERNAME_SEND:
                 for(i = 1; i < len; i++) {
-                    cred.idUsername[idMsgPtr] = data[i];
+                    credReceived.idUsername[idMsgPtr] = data[i];
                     idMsgPtr++;
                 }
                 return 1;
 
             case STATE_ID_USERNAME_DONE:
-                //cred.idUsername[idMsgPtr] = '\0';
                 idMsgPtr = 0;
                 return 1;
 
             case STATE_ID_PASS_SEND:
                 for(i = 1; i < len; i++) {
-                    cred.idPassword[idMsgPtr] = data[i];
+                    credReceived.idPassword[idMsgPtr] = data[i];
                     idMsgPtr++;
                 }
                 return 1;
 
             case STATE_ID_PASS_DONE:
-                //cred.idPassword[idMsgPtr] = '\0';
-                //idMsgPtr++;
                 flagCredReady = 1;
-                update_credential(cred);
+                update_credential(credReceived);
                 credCount++;
                 return 1;
     }
@@ -228,9 +217,6 @@ int main() {
 
     cred_t cred;
     clearCred(&cred);
-
-    // var init
-    memset(debugData, 0, 64 + 1);
 
     cli();
 
@@ -254,14 +240,27 @@ int main() {
     sei();
     j = 0;
 
+    //test data
+    for(i = 0; i < 10; i++) {
+        cred.idName[i] = 'a';
+    }
+    cred.idName[10] = '\0';
+    for(i = 0; i < 32; i++) {
+        cred.idUsername[i] = 'b';
+    }
+    cred.idUsername[32] = '\0';
+    for(i = 0; i < 22; i++) {
+        cred.idPassword[i] = 'c';
+    }
+    cred.idPassword[22] = '\0';
+
     while(1) {
         wdt_reset();
         usbPoll();
 
         if(flagCredReady) {
-            getCredentialData(j, &cred);
-            flagCredReady = 0;
             j++;
+            flagCredReady = 0;
         }
 
         // PB press detection
@@ -294,34 +293,37 @@ int main() {
             pbCounter++;
 
         if(usbInterruptIsReady() && state != STATE_WAIT && !flagDone) {
-            unsigned char sendKey = cred.idName[credPtr];
+            unsigned char sendKey;
             switch(state) {
-                case STATE_SHORT_KEY:
-                    // if we haven't cleared the idName from the screen
-                    if(!flagKeyCleared) {
-                        // clear 10 keys from screen (max size of idName)
+                case STATE_INIT:
+                    //clearCred(&cred);
+                    //getCredentialData(0, &cred);
+                    credPtr = 0;
+                    state = STATE_SEND_ID_NAME;
+                    flagKeyCleared = 0;
+
+                case STATE_SEND_ID_NAME:
+                    sendKey = cred.idName[credPtr];
+                    if(flagKeyCleared) {
+                        buildReport(sendKey);
+                    }
+
+                    else {
                         if(clearKeyCnt == 10) {
                             clearKeyCnt = 0;
                             flagKeyCleared = 1;
                             buildReport(sendKey);
                         }
+
                         else {
                             buildReport(KEY_BS);
                             clearKeyCnt++;
                         }
                     }
-                    else
-                        buildReport(sendKey);
-
-                    state = STATE_RELEASE_KEY;
+                    state = STATE_RELEASE_ID_NAME;
                     break;
 
-                case STATE_LONG_KEY:
-                    buildReport(sendKey);
-                    state = STATE_RELEASE_KEY;
-                    break;
-
-                case STATE_RELEASE_KEY:
+                case STATE_RELEASE_ID_NAME:
                     // always send empty report when done sending a key
                     buildReport(0);
 
@@ -330,44 +332,101 @@ int main() {
                         credPtr++;
 
                     // if the next char is NULL
-                    if(cred.idName[credPtr] == '\0' || (credPtr == 10 && !flagInjectId) || (credPtr == 42 && flagCredReady)) {
+                    if(cred.idName[credPtr] == '\0') {
+                        flagDone = 1;
+                        credPtr = 0;
+                        flagKeyCleared = 0;
+                        state = STATE_WAIT;
+                    }
+                    // the next char is valid so we go back to state_short_key
+                    else {
+                        state = STATE_SEND_ID_NAME;
+                    }
+                    break;
 
-                        // if we are in id injection mode this means we just sent the username
-                        // therefore we need to send the tab character
-                        if(flagInjectId) {
-                            state = STATE_SEND_TAB;
-                            break;
+                case STATE_LONG_KEY:
+                    credPtr = 0;
+                    flagKeyCleared = 0;
+                    state = STATE_SEND_ID_USERNAME;
+
+                case STATE_SEND_ID_USERNAME:
+                    sendKey = cred.idUsername[credPtr];
+                    // clear the previous idName
+                    if(flagKeyCleared)
+                        buildReport(sendKey);
+                    else {
+                        if(clearKeyCnt == 10) {
+                            clearKeyCnt = 0;
+                            flagKeyCleared = 1;
+                            buildReport(sendKey);
                         }
 
-                        // this means we are done sending
                         else {
-                            flagDone = 1;
-                            credPtr = 0;
-                            flagKeyCleared = 0;
-                            state = STATE_WAIT;
+                            buildReport(KEY_BS);
+                            clearKeyCnt++;
                         }
                     }
 
+                    state = STATE_RELEASE_ID_USERNAME;
+                    break;
+
+                case STATE_RELEASE_ID_USERNAME:
+                    // always send empty report when done sending a key
+                    buildReport(0);
+                    if(flagKeyCleared)
+                        credPtr++;
+
+                    // if the next char is NULL
+                    if(cred.idUsername[credPtr] == '\0') {
+                        state = STATE_SEND_TAB;
+                    }
                     // the next char is valid so we go back to state_short_key
                     else {
-                        state = STATE_SHORT_KEY;
+                        state = STATE_SEND_ID_USERNAME;
                     }
                     break;
 
                 case STATE_SEND_TAB:
                     // send tab character
                     buildReport(KEY_TAB);
-                    credPtr = 41;
-                    state = STATE_RELEASE_KEY;
-                    flagInjectId = 0;
+                    state = STATE_RELEASE_TAB;
                     break;
 
+                case STATE_RELEASE_TAB:
+                    buildReport(0);
+                    credPtr = 0;
+                    state = STATE_SEND_ID_PASSWORD;
+                    break;
+
+                case STATE_SEND_ID_PASSWORD:
+                    sendKey = cred.idPassword[credPtr];
+                    buildReport(sendKey);
+                    state = STATE_RELEASE_ID_PASSWORD;
+                    break;
+
+                case STATE_RELEASE_ID_PASSWORD:
+                    // always send empty report when done sending a key
+                    buildReport(0);
+                    credPtr++;
+
+                    // we are done injecting data
+                    if(cred.idPassword[credPtr] == '\0') {
+                        flagDone = 1;
+                        state = STATE_WAIT;
+                    }
+                    // the next char is valid so we go back to state_short_key
+                    else {
+                        state = STATE_SEND_ID_PASSWORD;
+                    }
+                    break;
+
+                // should not happen
                 default:
-                    state = STATE_WAIT; // should not happen
+                    state = STATE_WAIT;
             }
 
             usbSetInterrupt((void *)&keyboard_report, sizeof(keyboard_report));
-            LED_TOGGLE();
+            //LED_TOGGLE();
         }
     }
     return 0;
