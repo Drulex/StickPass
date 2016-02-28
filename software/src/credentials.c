@@ -46,6 +46,7 @@
 
 #include <avr/eeprom.h>
 #include "credentials.h"
+#include <string.h>
 #include "led.h"
 
 unsigned char credCount = 0;
@@ -82,27 +83,29 @@ int update_credential(cred_t cred) {
 
 void getCredentialData(unsigned char idNum, cred_t *cred) {
     int memPtr;
+    if(idNum == 0)
+        memPtr = 0;
+    else
+        memPtr = ((idNum - 1) * ID_BLOCK_LEN);
 
     // read idName
-    memPtr = (idNum * ID_BLOCK_LEN);
-    eeprom_read_block((void *)cred->idName, (const void *)memPtr, ID_NAME_LEN);
+    eeprom_read_block(cred->idName, (const void *)memPtr, ID_NAME_LEN);
     cred->idName[ID_NAME_LEN] = '\0';
 
     // read idUsername
     memPtr += 10;
-    eeprom_read_block((void *)cred->idUsername, (const void *)memPtr, ID_USERNAME_LEN);
+    eeprom_read_block(cred->idUsername, (const void *)memPtr, ID_USERNAME_LEN);
     cred->idUsername[ID_USERNAME_LEN] = '\0';
 
     // read idPassword
     memPtr += 32;
-    eeprom_read_block((void *)cred->idPassword, (const void *)memPtr, ID_PASSWORD_LEN);
+    eeprom_read_block(cred->idPassword, (const void *)memPtr, ID_PASSWORD_LEN);
     cred->idPassword[ID_PASSWORD_LEN] = '\0';
 }
 
 void clearCred(cred_t *cred) {
-    unsigned char i;
-    for(i = 0; i < sizeof(cred); i++) {
-        ((unsigned char *)&cred)[i] = 0;
-    }
+    memset(cred->idName, 0, ID_NAME_LEN);
+    memset(cred->idUsername, 0, ID_USERNAME_LEN);
+    memset(cred->idPassword, 0, ID_PASSWORD_LEN);
 }
 
