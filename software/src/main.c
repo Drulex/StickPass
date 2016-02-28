@@ -57,7 +57,9 @@ static unsigned char flagKeyCleared = 1;
 static unsigned char idMsgPtr = 0;
 static unsigned char idState;
 static unsigned char clearKeyCnt = 0;
+static unsigned char idCnt = 0;
 
+cred_t credReceived;
 keyboard_report_t keyboard_report;
 
 volatile static unsigned char LED_state = 0xff;
@@ -157,7 +159,6 @@ usbMsgLen_t usbFunctionSetup(unsigned char data[8]) {
 usbMsgLen_t usbFunctionWrite(uint8_t * data, unsigned char len) {
     unsigned char i;
     idState = data[0];
-    cred_t credReceived;
     switch(idState) {
             case STATE_ID_UPLOAD_INIT:
                 // clear credentials structure and reset msg pointer
@@ -197,7 +198,6 @@ usbMsgLen_t usbFunctionWrite(uint8_t * data, unsigned char len) {
             case STATE_ID_PASS_DONE:
                 flagCredReady = 1;
                 update_credential(credReceived);
-                credCount++;
                 return 1;
     }
 
@@ -205,7 +205,7 @@ usbMsgLen_t usbFunctionWrite(uint8_t * data, unsigned char len) {
 }
 
 int main() {
-    unsigned char i, j;
+    unsigned char i;
 
     // Modules initialization
     LED_Init();
@@ -238,30 +238,11 @@ int main() {
 
     // Enable global interrupts after re-enumeration
     sei();
-    j = 0;
-
-    //test data
-    for(i = 0; i < 10; i++) {
-        cred.idName[i] = 'a';
-    }
-    cred.idName[10] = '\0';
-    for(i = 0; i < 32; i++) {
-        cred.idUsername[i] = 'b';
-    }
-    cred.idUsername[32] = '\0';
-    for(i = 0; i < 22; i++) {
-        cred.idPassword[i] = 'c';
-    }
-    cred.idPassword[22] = '\0';
+    credCount = 0;
 
     while(1) {
         wdt_reset();
         usbPoll();
-
-        if(flagCredReady) {
-            j++;
-            flagCredReady = 0;
-        }
 
         // PB press detection
         if(!(PINB & (1<<PB3))) {
@@ -270,6 +251,13 @@ int main() {
                 // short PB press
                 state = STATE_INIT;
                 flagDone = 0;// reset counter
+                // iterate to next idCnt
+                if(idCnt < credCount) {
+                    idCnt++;
+                    LED_TOGGLE();
+                }
+                else
+                    idCnt = 1;
 
                 counter100ms = 0;
                 while(!(PINB & (1<<PB3)) && !pbHold) {
@@ -296,8 +284,8 @@ int main() {
             unsigned char sendKey;
             switch(state) {
                 case STATE_INIT:
-                    //clearCred(&cred);
-                    //getCredentialData(0, &cred);
+                    clearCred(&cred);
+                    getCredentialData(idCnt, &cred);
                     credPtr = 0;
                     state = STATE_SEND_ID_NAME;
                     flagKeyCleared = 0;
