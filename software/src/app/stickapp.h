@@ -27,6 +27,10 @@
 #define STATE_ID_PASS_DONE (char)10
 #define STATE_ID_UPLOAD_DONE (char)11
 
+#define ID_NAME_LEN 10
+#define ID_USERNAME_LEN 32
+#define ID_PASSWORD_LEN 22
+
 // constants
 char *vendorName = "alexandru@jora.ca";
 char *productName = "StickPass";

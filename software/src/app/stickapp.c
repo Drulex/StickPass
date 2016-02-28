@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
         printf("Usage:\n");
         printf("./stickapp led_on\n");
         printf("./stickapp led_off\n");
-        printf("./stickapp id_upload\n");
+        printf("./stickapp id_upload <idName> <idUsername> <idPassword>\n");
         exit(1);
     }
 
@@ -63,12 +63,12 @@ int main(int argc, char **argv) {
         int i, flagDone, flagFull, bufPtr;
         char tmpBuffer[8];
         int state = STATE_ID_UPLOAD_INIT;
-        //char idName[10] = "gmail";
-        char idName[10] = "linkedin23";
-        //char idUsername[32] = "alexandru.jora@gmail.com";
-        char idUsername[32] = "user@linkedinservice12365478.com";
-        //char idPassword[22] = "hellothisisapassword";
-        char idPassword[22] = "youmustbekiddingmate12";
+        char idName[ID_NAME_LEN];
+        char idUsername[ID_USERNAME_LEN];
+        char idPassword[ID_PASSWORD_LEN];
+        memcpy(idName, argv[2], ID_NAME_LEN);
+        memcpy(idUsername, argv[3], ID_USERNAME_LEN);
+        memcpy(idPassword, argv[4], ID_PASSWORD_LEN);
 
         flagDone = 0;
         memset(tmpBuffer, 0, sizeof(tmpBuffer));
@@ -101,12 +101,10 @@ int main(int argc, char **argv) {
 
                         // fill rest of buffer
                         for(i = 1; idName[bufPtr] != '\0' && i < 8; i++) {
-                            syslog(LOG_DEBUG, "char=%c", idName[bufPtr]);
                             tmpBuffer[i] = idName[bufPtr];
                             bufPtr++;
                         }
                         if(idName[bufPtr] == '\0') {
-                            syslog(LOG_DEBUG, "reached NULL!");
                             flagFull = 1;
                         }
 
