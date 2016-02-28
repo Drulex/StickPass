@@ -35,6 +35,7 @@
 // states for usb_msg parsing
 #define USB_LED_OFF 0
 #define USB_LED_ON 1
+#define USB_CLEAR_EEPROM 4
 #define STATE_ID_UPLOAD 3
 #define STATE_ID_UPLOAD_INIT 4
 #define STATE_ID_NAME_SEND 5
@@ -145,6 +146,11 @@ usbMsgLen_t usbFunctionSetup(unsigned char data[8]) {
 
             case STATE_ID_UPLOAD:
                 return USB_NO_MSG;
+
+            case USB_CLEAR_EEPROM:
+                clearEEPROM();
+                idCnt = 0;
+                return 0;
         }
     }
     return 0;
@@ -219,6 +225,8 @@ int main() {
     clearCred(&cred);
 
     cli();
+    getCredCount();
+    idCnt = credCount;
 
     usbInit();
 
@@ -238,7 +246,6 @@ int main() {
 
     // Enable global interrupts after re-enumeration
     sei();
-    credCount = 0;
 
     while(1) {
         wdt_reset();
@@ -251,15 +258,16 @@ int main() {
                 // short PB press
                 state = STATE_INIT;
                 flagDone = 0;// reset counter
+
                 // iterate to next idCnt
                 if(idCnt < credCount) {
                     idCnt++;
-                    LED_TOGGLE();
                 }
                 else
                     idCnt = 1;
 
                 counter100ms = 0;
+
                 while(!(PINB & (1<<PB3)) && !pbHold) {
                     // waiting for PB long press event
                     wdt_reset();
@@ -414,7 +422,7 @@ int main() {
             }
 
             usbSetInterrupt((void *)&keyboard_report, sizeof(keyboard_report));
-            //LED_TOGGLE();
+            LED_TOGGLE();
         }
     }
     return 0;
