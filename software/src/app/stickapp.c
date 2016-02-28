@@ -33,6 +33,7 @@ int main(int argc, char **argv) {
         printf("./stickapp led_on\n");
         printf("./stickapp led_off\n");
         printf("./stickapp id_upload <idName> <idUsername> <idPassword>\n");
+        printf("./stickapp clear_eeprom\n");
         exit(1);
     }
 
@@ -57,6 +58,12 @@ int main(int argc, char **argv) {
         nBytes = usb_control_msg(handle,
             USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_IN,
             USB_LED_OFF, 0, 0, (char *)buffer, sizeof(buffer), 5000);
+    }
+
+    else if(strcmp(argv[1], "clear_eeprom") == 0) {
+        nBytes = usb_control_msg(handle,
+            USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_IN,
+            USB_CLEAR_EEPROM, 0, 0, 0, 0, 5000);
     }
 
     else if(strcmp(argv[1], "id_upload") == 0) {

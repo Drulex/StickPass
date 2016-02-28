@@ -14,7 +14,7 @@
  *  Each block is called a "credential" and is structured as per table below:
  *
  *  ---------------------------------------------------------------------
- *  | idName (10 bytes) | idUsername (32 bytes) | idPassword (22 bytes) |
+ *  | idName (10 bytes) | idUsername (32 bytes) | idPassword (21 bytes) |
  *  ---------------------------------------------------------------------
  *
  *  This static memory layout has the advantage of greatly simplifying code complexity
@@ -53,6 +53,7 @@ unsigned char credCount = 0;
 unsigned char credPtr;
 
 int update_credential(cred_t cred) {
+    getCredCount();
 
     if(credCount == MAX_CRED)
         return -1;
@@ -77,6 +78,7 @@ int update_credential(cred_t cred) {
 
     // increment global var credCount
     credCount++;
+    eeprom_update_block((const void*)&credCount, (void *)CREDCOUNT_LOCATION, 1);
 
     return 0;
 }
@@ -93,12 +95,12 @@ void getCredentialData(unsigned char idNum, cred_t *cred) {
     cred->idName[ID_NAME_LEN] = '\0';
 
     // read idUsername
-    memPtr += 10;
+    memPtr += ID_NAME_LEN;
     eeprom_read_block(cred->idUsername, (const void *)memPtr, ID_USERNAME_LEN);
     cred->idUsername[ID_USERNAME_LEN] = '\0';
 
     // read idPassword
-    memPtr += 32;
+    memPtr += ID_USERNAME_LEN;
     eeprom_read_block(cred->idPassword, (const void *)memPtr, ID_PASSWORD_LEN);
     cred->idPassword[ID_PASSWORD_LEN] = '\0';
 }
@@ -109,3 +111,21 @@ void clearCred(cred_t *cred) {
     memset(cred->idPassword, 0, ID_PASSWORD_LEN);
 }
 
+void clearEEPROM(void) {
+    unsigned char i;
+    int memPtr;
+    unsigned char clear[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    for(i = 0; i < 64; i++) {
+        memPtr = (i * MAX_CRED);
+        eeprom_update_block((const void *)clear, (void *)memPtr, 8);
+    }
+    credCount = 0;
+    // set credCount to 0 in memory
+    eeprom_update_block((const void*)&credCount, (void *)CREDCOUNT_LOCATION, 1);
+}
+
+void getCredCount(void) {
+    unsigned char data;
+    eeprom_read_block(&data, (const void*)CREDCOUNT_LOCATION, 1);
+    credCount = data;
+}

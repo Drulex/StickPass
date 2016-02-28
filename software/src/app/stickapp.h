@@ -13,6 +13,7 @@
 #define USB_LED_OFF 0
 #define USB_LED_ON 1
 #define USB_DATA_OUT 2
+#define USB_CLEAR_EEPROM 4
 
 #define USB_VID 0x16c0
 #define USB_PID 0x05dc
@@ -29,7 +30,7 @@
 
 #define ID_NAME_LEN 10
 #define ID_USERNAME_LEN 32
-#define ID_PASSWORD_LEN 22
+#define ID_PASSWORD_LEN 21
 
 // constants
 char *vendorName = "alexandru@jora.ca";
