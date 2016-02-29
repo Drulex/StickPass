@@ -9,7 +9,7 @@
  *  Credentials management scheme
  *  =============================
  *
- *  For the sake of simplicity the eeprom memory is divided in 8 blocks of 64 bytes.
+ *  For the sake of simplicity the eeprom memory is divided in 8 blocks of 63 bytes.
  *
  *  Each block is called a "credential" and is structured as per table below:
  *
@@ -22,8 +22,6 @@
  *  allocation and management on the eeprom is probably not worth the effort considering
  *  the scope of this project, but is definitely a more elegant solution that could be
  *  implemented in a future release.
- *
- *  *Each idBlock component should be padded with '\0' to fill its respective block size.*
  *
  *  Typical sequence:
  *  -----------------
@@ -47,10 +45,8 @@
 #include <avr/eeprom.h>
 #include "credentials.h"
 #include <string.h>
-#include "led.h"
 
 unsigned char credCount = 0;
-unsigned char credPtr;
 
 int update_credential(cred_t cred) {
     getCredCount();

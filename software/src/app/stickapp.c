@@ -30,10 +30,13 @@ int main(int argc, char **argv) {
 
     if(argc < 2) {
         printf("Usage:\n");
+        printf("./stickapp init_device\n");
         printf("./stickapp led_on\n");
         printf("./stickapp led_off\n");
         printf("./stickapp id_upload <idName> <idUsername> <idPassword>\n");
+        printf("./stickapp unlock_device <unlock key>\n");
         printf("./stickapp clear_eeprom\n");
+
         exit(1);
     }
 
@@ -46,6 +49,16 @@ int main(int argc, char **argv) {
 
     else {
         syslog(LOG_INFO, "Successfully opened device: VID=%04x PID=%04x", USB_VID, USB_PID);
+    }
+
+    if(strcmp(argv[1], "unlock_device") == 0) {
+        char tmpBuffer[8];
+        tmpBuffer[0] = STATE_UNLOCK_DEVICE;
+        memcpy(&tmpBuffer[1], argv[2], 7);
+        nBytes = usb_control_msg(handle,
+            USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
+            USB_UNLOCK_DEVICE, 0, 0, (char *)tmpBuffer, sizeof(tmpBuffer), 5000);
+        syslog(LOG_INFO, "Sent %d bytes to USB device.\nDATA=%s", nBytes, tmpBuffer);
     }
 
     if(strcmp(argv[1], "led_on") == 0) {
@@ -90,7 +103,7 @@ int main(int argc, char **argv) {
                     tmpBuffer[0] = STATE_ID_UPLOAD_INIT;
                     nBytes = usb_control_msg(handle,
                              USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-                             STATE_ID_UPLOAD, 0, 0, (char *)tmpBuffer, sizeof(tmpBuffer), 5000);
+                             USB_ID_UPLOAD, 0, 0, (char *)tmpBuffer, sizeof(tmpBuffer), 5000);
                     state = STATE_ID_NAME_SEND;
                     syslog(LOG_INFO, "Sent signal to initiate id upload");
                     break;
@@ -117,7 +130,7 @@ int main(int argc, char **argv) {
 
                         nBytes = usb_control_msg(handle,
                                      USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-                                     STATE_ID_UPLOAD, 0, 0, (char *)tmpBuffer, i, 5000);
+                                     USB_ID_UPLOAD, 0, 0, (char *)tmpBuffer, i, 5000);
                         syslog(LOG_INFO, "Sent %d bytes to USB device.\nDATA=%s", nBytes, tmpBuffer);
                     }
                     state = STATE_ID_NAME_DONE;
@@ -128,7 +141,7 @@ int main(int argc, char **argv) {
                     tmpBuffer[0] = STATE_ID_NAME_DONE;
                     nBytes = usb_control_msg(handle,
                              USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-                             STATE_ID_UPLOAD, 0, 0, (char *)tmpBuffer, sizeof(tmpBuffer), 5000);
+                             USB_ID_UPLOAD, 0, 0, (char *)tmpBuffer, sizeof(tmpBuffer), 5000);
                     state = STATE_ID_USERNAME_SEND;
                     syslog(LOG_INFO, "Sent signal for idName done");
                     break;
@@ -158,7 +171,7 @@ int main(int argc, char **argv) {
                         syslog(LOG_INFO, "Preparing to send:%s", tmpBuffer);
                         nBytes = usb_control_msg(handle,
                                      USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-                                     STATE_ID_UPLOAD, 0, 0, (char *)tmpBuffer, i, 5000);
+                                     USB_ID_UPLOAD, 0, 0, (char *)tmpBuffer, i, 5000);
                         syslog(LOG_INFO, "Sent %d bytes to USB device.\nDATA=%s", nBytes, tmpBuffer);
                     }
                     state = STATE_ID_USERNAME_DONE;
@@ -170,7 +183,7 @@ int main(int argc, char **argv) {
                     syslog(LOG_INFO, "Preparing to send:%s", tmpBuffer);
                     nBytes = usb_control_msg(handle,
                              USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-                             STATE_ID_UPLOAD, 0, 0, (char *)tmpBuffer, sizeof(tmpBuffer), 5000);
+                             USB_ID_UPLOAD, 0, 0, (char *)tmpBuffer, sizeof(tmpBuffer), 5000);
                     state = STATE_ID_PASS_SEND;
                     syslog(LOG_INFO, "Sent signal for idUsername done");
                     break;
@@ -200,7 +213,7 @@ int main(int argc, char **argv) {
                         syslog(LOG_INFO, "Preparing to send:%s", tmpBuffer);
                         nBytes = usb_control_msg(handle,
                                      USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-                                     STATE_ID_UPLOAD, 0, 0, (char *)tmpBuffer, i, 5000);
+                                     USB_ID_UPLOAD, 0, 0, (char *)tmpBuffer, i, 5000);
                         syslog(LOG_INFO, "Sent %d bytes to USB device.\nDATA=%s", nBytes, tmpBuffer);
                     }
                     state = STATE_ID_PASS_DONE;
@@ -212,21 +225,16 @@ int main(int argc, char **argv) {
                     syslog(LOG_INFO, "Preparing to send:%s", tmpBuffer);
                     nBytes = usb_control_msg(handle,
                              USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-                             STATE_ID_UPLOAD, 0, 0, (char *)tmpBuffer, sizeof(tmpBuffer), 5000);
+                             USB_ID_UPLOAD, 0, 0, (char *)tmpBuffer, sizeof(tmpBuffer), 5000);
                     flagDone = 1;
                     syslog(LOG_INFO, "Sent signal for idPassword done");
                     break;
             }
         }
     }
+    else
 
-    else if(strcmp(argv[1], "interrupt_in") == 0) {
-        nBytes = usb_interrupt_read(handle,
-        USB_ENDPOINT_IN | 1, buffer, sizeof(buffer), 5000);
-        syslog(LOG_INFO, "Received %d bytes from USB device.\nDATA=%s", nBytes, buffer);
-    }
-    if(nBytes < 0)
-        fprintf(stderr, "USB error: %s", usb_strerror());
+
 
     usb_close(handle);
 

@@ -28,8 +28,6 @@ typedef struct {
 } cred_t;
 
 extern unsigned char credCount;
-extern unsigned char credPtr;
-
 
 // prototypes
 int update_credential(cred_t cred);
