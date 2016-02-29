@@ -29,21 +29,27 @@ int main(int argc, char **argv) {
     char buffer[64];
 
     if(argc < 2) {
+        printf("StickApp v1.0 -- A CLI for use with the StickPass password manager\n\n");
         printf("Usage:\n");
-        printf("./stickapp init_device\n");
-        printf("./stickapp led_on\n");
-        printf("./stickapp led_off\n");
-        printf("./stickapp id_upload <idName> <idUsername> <idPassword>\n");
-        printf("./stickapp unlock_device <unlock key>\n");
-        printf("./stickapp clear_eeprom\n");
-
+        printf("    -i, --init_device                      Initialize device for the first time\n");
+        printf("    -u, --unlock_device <masterKey>        Unlock device\n");
+        printf("    -s, --send <idName> <idUser> <idPass>  Send credential to device\n");
+        printf("    -g, --generate                         Generate a complex password\n");
+        printf("    -c, --clear                            Clear sensitive data from device\n");
+        printf("    -b, --backup <file>                    Backup data from device to local file\n");
+        printf("    -h, --help                             Show this help menu\n\n");
+        printf("Arguments details\n");
+        printf("    <masterKey> key/password to unlock the device\n");
+        printf("    <idName>    nickname associated with credential\n");
+        printf("    <idUser>    username associated with credential\n");
+        printf("    <idPass>    password associated with credential\n");
         exit(1);
     }
 
     handle = usbOpenDevice(USB_VID, vendorName, USB_PID, productName);
 
     if(handle == NULL) {
-        syslog(LOG_DEBUG, "Error! Could not find USB Device!");
+        syslog(LOG_INFO, "Error! Could not find USB Device!");
         exit(1);
     }
 
@@ -51,7 +57,8 @@ int main(int argc, char **argv) {
         syslog(LOG_INFO, "Successfully opened device: VID=%04x PID=%04x", USB_VID, USB_PID);
     }
 
-    if(strcmp(argv[1], "unlock_device") == 0) {
+    // unlock device
+    if(!strcmp(argv[1], "unlock_device") || !strcmp(argv[1], "-u")) {
         char tmpBuffer[8];
         tmpBuffer[0] = STATE_UNLOCK_DEVICE;
         memcpy(&tmpBuffer[1], argv[2], 7);
@@ -61,25 +68,32 @@ int main(int argc, char **argv) {
         syslog(LOG_INFO, "Sent %d bytes to USB device.\nDATA=%s", nBytes, tmpBuffer);
     }
 
-    if(strcmp(argv[1], "led_on") == 0) {
-        nBytes = usb_control_msg(handle,
-            USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_IN,
-            USB_LED_ON, 0, 0, (char *)buffer, sizeof(buffer), 5000);
+    // init device
+    else if(!strcmp(argv[1], "init_device") || !strcmp(argv[1], "-i")) {
+        syslog(LOG_INFO, "Not implemented yet!");
     }
 
-    else if(strcmp(argv[1], "led_off") == 0) {
-        nBytes = usb_control_msg(handle,
-            USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_IN,
-            USB_LED_OFF, 0, 0, (char *)buffer, sizeof(buffer), 5000);
+    // generate complex password
+    else if(!strcmp(argv[1], "generate") || !strcmp(argv[1], "-g")) {
+        syslog(LOG_INFO, "Not implemented yet!");
     }
 
-    else if(strcmp(argv[1], "clear_eeprom") == 0) {
+    // backup data from device
+    else if(!strcmp(argv[1], "backup") || !strcmp(argv[1], "-b")) {
+        syslog(LOG_INFO, "Not implemented yet!");
+    }
+
+    // clear device
+    else if(!strcmp(argv[1], "clear") || !strcmp(argv[1], "-c")) {
+        syslog(LOG_INFO, "About to erase whole EEPROM on device");
         nBytes = usb_control_msg(handle,
             USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_IN,
             USB_CLEAR_EEPROM, 0, 0, 0, 0, 5000);
+        syslog(LOG_INFO, "EEPROM erased!");
     }
 
-    else if(strcmp(argv[1], "id_upload") == 0) {
+    // send credential to device
+    else if(!strcmp(argv[1], "send") || !strcmp(argv[1], "-s")) {
         int i, flagDone, flagFull, bufPtr;
         char tmpBuffer[8];
         int state = STATE_ID_UPLOAD_INIT;
@@ -158,7 +172,6 @@ int main(int argc, char **argv) {
 
                         // fill rest of buffer
                         for(i = 1; idUsername[bufPtr] != '\0' && i < 8; i++) {
-                            syslog(LOG_DEBUG, "char=%c", idUsername[bufPtr]);
                             tmpBuffer[i] = idUsername[bufPtr];
                             bufPtr++;
                         }
@@ -200,7 +213,6 @@ int main(int argc, char **argv) {
 
                         // fill rest of buffer
                         for(i = 1; idPassword[bufPtr] != '\0' && i < 8; i++) {
-                            syslog(LOG_DEBUG, "char=%c", idPassword[bufPtr]);
                             tmpBuffer[i] = idPassword[bufPtr];
                             bufPtr++;
                         }
@@ -232,10 +244,8 @@ int main(int argc, char **argv) {
             }
         }
     }
-    else
 
-
-
+    // free usb handle
     usb_close(handle);
 
     // close syslog
