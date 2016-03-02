@@ -33,7 +33,7 @@ extern unsigned char credCount;
 int update_credential(cred_t cred);
 void getCredentialData(unsigned char idNum, cred_t *cred);
 void clearCred(cred_t *cred);
-void clearEEPROM(void);
+void clearEEPROM(unsigned char flagResetKey);
 void getCredCount(void);
 
 #endif

@@ -108,6 +108,11 @@ void clearCred(cred_t *cred) {
 }
 
 void clearEEPROM(void) {
+void clearEEPROM(unsigned char flagResetKey) {
+    // backup masterKey
+    char masterKey[7];
+    getMasterKey(&masterKey[0]);
+
     unsigned char i;
     int memPtr;
     unsigned char clear[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
@@ -118,6 +123,10 @@ void clearEEPROM(void) {
     credCount = 0;
     // set credCount to 0 in memory
     eeprom_update_block((const void*)&credCount, (void *)CREDCOUNT_LOCATION, 1);
+
+    // restore the master key if key reset flag is false
+    if(!flagResetKey)
+        setMasterKey(&masterKey[0]);
 }
 
 void getCredCount(void) {
