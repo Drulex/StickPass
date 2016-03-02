@@ -40,19 +40,36 @@
  *
  *  5. credCount variable is updated.
  *
+ * === IMPORTANT ===
+ * This module does not take any protective measures to prevent EEPROM corruption
+ * This means that if power is removed during a write cycle the memory WILL BE CORRUPTED
+ * For the scope of this project we don't care. Too much trouble to prevent.
+ *
  */
 
 #include <avr/eeprom.h>
 #include "credentials.h"
 #include <string.h>
+#include "led.h"
 
+// init credCount to 0
 unsigned char credCount = 0;
 
+/*
+ *  Get the credential count and append credential to EEPROM memory
+ *  Return 0 on success
+ *  Return -1 if no more space is available
+ *
+ */
 int update_credential(cred_t cred) {
     getCredCount();
 
-    if(credCount == MAX_CRED)
+    if(credCount == MAX_CRED) {
+        // signal that something is wrong
+        LED_HIGH();
         return -1;
+    }
+
     int memPtr;
     unsigned char idNameLen = sizeof(cred.idName);
     unsigned char idUsernameLen = sizeof(cred.idUsername);
@@ -98,6 +115,13 @@ void getMasterKey(char *masterKey) {
 void setMasterKey(char *masterKey) {
     eeprom_update_block((const void *)masterKey, (void *)MASTERKEY_LOCATION, MASTERKEY_LEN);
 }
+
+/*
+ * Get credential information from EEPROM memory
+ * Take an ID number and a cred_t structer and update the credential
+ * from EEPROM in the cred structure
+ *
+ */
 void getCredentialData(unsigned char idNum, cred_t *cred) {
     int memPtr;
     if(idNum == 0)
@@ -120,13 +144,20 @@ void getCredentialData(unsigned char idNum, cred_t *cred) {
     cred->idPassword[ID_PASSWORD_LEN] = '\0';
 }
 
+/*
+ * Clear memory before using cred_t structure
+ *
+ */
 void clearCred(cred_t *cred) {
     memset(cred->idName, 0, ID_NAME_LEN);
     memset(cred->idUsername, 0, ID_USERNAME_LEN);
     memset(cred->idPassword, 0, ID_PASSWORD_LEN);
 }
 
-void clearEEPROM(void) {
+/*
+ * Clear EEPROM by writing 0xFF on all 512 bytes
+ *
+ */
 void clearEEPROM(unsigned char flagResetKey) {
     // backup masterKey
     char masterKey[7];
@@ -148,6 +179,11 @@ void clearEEPROM(unsigned char flagResetKey) {
         setMasterKey(&masterKey[0]);
 }
 
+/*
+ * Obtain the credential count from the EEPROM memory
+ * This is located at address 0x1F8
+ *
+ */
 void getCredCount(void) {
     unsigned char data;
     eeprom_read_block(&data, (const void*)CREDCOUNT_LOCATION, 1);

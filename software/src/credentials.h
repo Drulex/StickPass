@@ -31,6 +31,7 @@ typedef struct {
     char idPassword[ID_PASSWORD_LEN + 1];
 } cred_t;
 
+// global variable to keep track of number of credentials in eeprom
 extern unsigned char credCount;
 
 // prototypes
