@@ -90,6 +90,14 @@ void getMasterKey(char *masterKey) {
     eeprom_read_block(masterKey, (const void*)MASTERKEY_LOCATION, MASTERKEY_LEN);
 }
 
+/*
+ * Set the master key in EEPROM memory
+ * We erase memory whenever we set the key for security purposes
+ *
+ */
+void setMasterKey(char *masterKey) {
+    eeprom_update_block((const void *)masterKey, (void *)MASTERKEY_LOCATION, MASTERKEY_LEN);
+}
 void getCredentialData(unsigned char idNum, cred_t *cred) {
     int memPtr;
     if(idNum == 0)

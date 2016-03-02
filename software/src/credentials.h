@@ -40,6 +40,7 @@ void clearCred(cred_t *cred);
 void clearEEPROM(unsigned char flagResetKey);
 void getCredCount(void);
 void getMasterKey(char *masterKey);
+void setMasterKey(char *masterKey);
 
 #endif
 
