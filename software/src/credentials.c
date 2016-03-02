@@ -79,6 +79,17 @@ int update_credential(cred_t cred) {
     return 0;
 }
 
+/*
+ * Get the master key from EEPROM memory
+ * This is not really good security at least we could spread the key
+ * around in obscure locations to improve security but for the scope
+ * of this project it's ok
+ *
+ */
+void getMasterKey(char *masterKey) {
+    eeprom_read_block(masterKey, (const void*)MASTERKEY_LOCATION, MASTERKEY_LEN);
+}
+
 void getCredentialData(unsigned char idNum, cred_t *cred) {
     int memPtr;
     if(idNum == 0)

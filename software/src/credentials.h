@@ -18,8 +18,12 @@
 #define ID_USERNAME_LEN 32
 #define ID_PASSWORD_LEN 21
 #define MAX_CRED 8
+#define MASTERKEY_LEN 7
+
 // credcnt var is kept at eeprom location 0x1F8 (504)
 #define CREDCOUNT_LOCATION 0x1F8
+// master location in eeprom is 1F9 (505)
+#define MASTERKEY_LOCATION 0x1F9
 
 typedef struct {
     char idName[ID_NAME_LEN + 1];
@@ -35,6 +39,7 @@ void getCredentialData(unsigned char idNum, cred_t *cred);
 void clearCred(cred_t *cred);
 void clearEEPROM(unsigned char flagResetKey);
 void getCredCount(void);
+void getMasterKey(char *masterKey);
 
 #endif
 
