@@ -14,6 +14,7 @@
 #define USB_LED_ON 1
 #define USB_CLEAR_EEPROM 2
 #define USB_UNLOCK_DEVICE 15
+#define USB_INIT_DEVICE 16
 
 #define USB_VID 0x16c0
 #define USB_PID 0x05dc
@@ -28,6 +29,7 @@
 #define STATE_ID_PASS_DONE (char)10
 #define STATE_ID_UPLOAD_DONE (char)11
 #define STATE_UNLOCK_DEVICE (char)12
+#define STATE_INIT_DEVICE (char)13
 
 #define ID_NAME_LEN 10
 #define ID_USERNAME_LEN 32

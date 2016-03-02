@@ -26,7 +26,6 @@ int main(int argc, char **argv) {
 
     usb_dev_handle *handle = NULL;
     int nBytes = 0;
-    char buffer[64];
 
     if(argc < 2) {
         printf("StickApp v1.0 -- A CLI for use with the StickPass password manager\n\n");
@@ -58,7 +57,7 @@ int main(int argc, char **argv) {
     }
 
     // unlock device
-    if(!strcmp(argv[1], "unlock_device") || !strcmp(argv[1], "-u")) {
+    if(!strcmp(argv[1], "--unlock_device") || !strcmp(argv[1], "-u")) {
         char tmpBuffer[8];
         tmpBuffer[0] = STATE_UNLOCK_DEVICE;
         memcpy(&tmpBuffer[1], argv[2], 7);
@@ -69,22 +68,28 @@ int main(int argc, char **argv) {
     }
 
     // init device
-    else if(!strcmp(argv[1], "init_device") || !strcmp(argv[1], "-i")) {
-        syslog(LOG_INFO, "Not implemented yet!");
+    else if(!strcmp(argv[1], "--init_device") || !strcmp(argv[1], "-i")) {
+        char tmpBuffer[8];
+        tmpBuffer[0] = STATE_INIT_DEVICE;
+        memcpy(&tmpBuffer[1], argv[2], 7);
+        nBytes = usb_control_msg(handle,
+            USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
+            USB_INIT_DEVICE, 0, 0, (char *)tmpBuffer, sizeof(tmpBuffer), 5000);
+        syslog(LOG_INFO, "Sent %d bytes to USB device.\nDATA=%s", nBytes, tmpBuffer);
     }
 
     // generate complex password
-    else if(!strcmp(argv[1], "generate") || !strcmp(argv[1], "-g")) {
+    else if(!strcmp(argv[1], "--generate") || !strcmp(argv[1], "-g")) {
         syslog(LOG_INFO, "Not implemented yet!");
     }
 
     // backup data from device
-    else if(!strcmp(argv[1], "backup") || !strcmp(argv[1], "-b")) {
+    else if(!strcmp(argv[1], "--backup") || !strcmp(argv[1], "-b")) {
         syslog(LOG_INFO, "Not implemented yet!");
     }
 
     // clear device
-    else if(!strcmp(argv[1], "clear") || !strcmp(argv[1], "-c")) {
+    else if(!strcmp(argv[1], "--clear") || !strcmp(argv[1], "-c")) {
         syslog(LOG_INFO, "About to erase whole EEPROM on device");
         nBytes = usb_control_msg(handle,
             USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_IN,
@@ -93,7 +98,7 @@ int main(int argc, char **argv) {
     }
 
     // send credential to device
-    else if(!strcmp(argv[1], "send") || !strcmp(argv[1], "-s")) {
+    else if(!strcmp(argv[1], "--send") || !strcmp(argv[1], "-s")) {
         int i, flagDone, flagFull, bufPtr;
         char tmpBuffer[8];
         int state = STATE_ID_UPLOAD_INIT;
