@@ -45,6 +45,11 @@ usbMsgLen_t usbFunctionSetup(unsigned char data[8]) {
     // other requests
     else {
         switch(rq->bRequest) {
+            case USB_INIT_DEVICE:
+                clearEEPROM(1);
+                idCnt = 0;
+                return USB_NO_MSG;
+
             case USB_UNLOCK_DEVICE:
                 return USB_NO_MSG;
 
@@ -66,7 +71,7 @@ usbMsgLen_t usbFunctionSetup(unsigned char data[8]) {
 
             case USB_CLEAR_EEPROM:
                 if(flagUnlocked) {
-                    clearEEPROM();
+                    clearEEPROM(0);
                     idCnt = 0;
                 }
                 return 0;
@@ -85,8 +90,16 @@ usbMsgLen_t usbFunctionWrite(uint8_t * data, unsigned char len) {
     unsigned char i;
     idState = data[0];
     switch(idState) {
+        case STATE_INIT_DEVICE:
+            // memory has been wiped now we write master key to it
+            setMasterKey((char *)&data[1]);
+            flagUnlocked = 1;
+            LED_LOW();
+            return 1;
+
         case STATE_UNLOCK_DEVICE:
-            //getMasterKey(&masterKey);
+            getMasterKey(&masterKey[0]);
+            // check if keys match
             if(memcmp(masterKey, &data[1], 7) == 0) {
                 flagUnlocked = 1;
                 LED_LOW();

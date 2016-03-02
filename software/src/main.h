@@ -38,7 +38,9 @@
 #define USB_CLEAR_EEPROM 2
 #define USB_ID_UPLOAD 3
 #define USB_UNLOCK_DEVICE 15
+#define USB_INIT_DEVICE 16
 
+// states for usbFunctionWrite
 #define STATE_ID_UPLOAD_INIT 4
 #define STATE_ID_NAME_SEND 5
 #define STATE_ID_NAME_DONE 6
@@ -48,7 +50,9 @@
 #define STATE_ID_PASS_DONE 10
 #define STATE_ID_UPLOAD_DONE 11
 #define STATE_UNLOCK_DEVICE 12
+#define STATE_INIT_DEVICE 13
 
+// ASCII key codes for BS and TAB keys
 #define KEY_BS  0x08
 #define KEY_TAB 0x09
 
@@ -64,7 +68,7 @@ static unsigned char idState;
 static unsigned char clearKeyCnt = 0;
 static unsigned char idCnt = 0;
 static unsigned char credPtr = 0;
-char masterKey[7] = "1234567";
+static char masterKey[7];
 
 cred_t credReceived;
 keyboard_report_t keyboard_report;
