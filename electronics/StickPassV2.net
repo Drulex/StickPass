@@ -1,8 +1,8 @@
 (export (version D)
   (design
     (source /home/drulex/School/2016/PFE/electronics/StickPassV2.sch)
-    (date "Tue 09 Feb 2016 04:59:44 PM EST")
-    (tool "Eeschema 4.0.1-stable")
+    (date "Tue 01 Mar 2016 12:06:38 PM EST")
+    (tool "Eeschema 4.0.2-stable")
     (sheet (number 1) (name /) (tstamps /)
       (title_block
         (title StickPass)
@@ -17,13 +17,13 @@
   (components
     (comp (ref IC1)
       (value ATTINY85-P)
-      (footprint Housings_DIP:DIP-8_W7.62mm)
+      (footprint stickpass:DIP-8_W7.62mm)
       (libsource (lib atmel) (part ATTINY85-P))
       (sheetpath (names /) (tstamps /))
       (tstamp 564CBF0F))
     (comp (ref P1)
       (value USB_A)
-      (footprint Connect:USB_A)
+      (footprint Connect:usb_a_molex_48037-0001)
       (libsource (lib conn) (part USB_A))
       (sheetpath (names /) (tstamps /))
       (tstamp 564CBFEF))
@@ -181,12 +181,12 @@
         (pin (num 1) (name K) (type passive))
         (pin (num 2) (name A) (type passive)))))
   (libraries
-    (library (logical device)
-      (uri /usr/share/kicad/library/device.lib))
     (library (logical conn)
       (uri /usr/share/kicad/library/conn.lib))
     (library (logical atmel)
-      (uri /usr/share/kicad/library/atmel.lib)))
+      (uri /usr/share/kicad/library/atmel.lib))
+    (library (logical device)
+      (uri /usr/share/kicad/library/device.lib)))
   (nets
     (net (code 1) (name GND)
       (node (ref SW1) (pin 1))

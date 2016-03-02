@@ -61,7 +61,7 @@ U 1 1 564CBFEF
 P 3800 3150
 F 0 "P1" H 4000 2950 50  0000 C CNN
 F 1 "USB_A" H 3750 3350 50  0000 C CNN
-F 2 "Connect:USB_A" V 3750 3050 60  0001 C CNN
+F 2 "Connect:usb_a_molex_48037-0001" V 3750 3050 60  0001 C CNN
 F 3 "" V 3750 3050 60  0000 C CNN
 	1    3800 3150
 	1    0    0    -1  
@@ -218,15 +218,9 @@ F 3 "" H 3750 4600 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	4375 3550 4475 3550
+	4375 3550 4950 3550
 Wire Wire Line
-	4475 3550 4575 3550
-Wire Wire Line
-	4575 3550 4950 3550
-Wire Wire Line
-	4375 3650 4875 3650
-Wire Wire Line
-	4875 3650 4950 3650
+	4375 3650 4950 3650
 Wire Wire Line
 	4575 3750 4575 3550
 Connection ~ 4575 3550
@@ -234,9 +228,7 @@ Wire Wire Line
 	4875 3750 4875 3650
 Connection ~ 4875 3650
 Wire Wire Line
-	4575 4150 4725 4150
-Wire Wire Line
-	4725 4150 4875 4150
+	4575 4150 4875 4150
 Connection ~ 4725 4150
 Wire Wire Line
 	4475 3450 4475 3550
@@ -248,13 +240,9 @@ Wire Wire Line
 Wire Wire Line
 	3900 3450 3900 3650
 Wire Wire Line
-	8450 3300 8450 3450
+	8450 3300 8450 3550
 Wire Wire Line
-	8450 3450 8450 3550
-Wire Wire Line
-	8450 3850 8450 3950
-Wire Wire Line
-	8450 3950 8450 4100
+	8450 3850 8450 4100
 Connection ~ 8450 3450
 Connection ~ 8450 3950
 Text GLabel 4400 4600 2    60   Input ~ 0
@@ -277,9 +265,7 @@ Wire Wire Line
 Wire Wire Line
 	3400 4600 3450 4600
 Wire Wire Line
-	4050 4600 4150 4600
-Wire Wire Line
-	4150 4600 4400 4600
+	4050 4600 4400 4600
 $Comp
 L +5V #PWR07
 U 1 1 568C4C6A
