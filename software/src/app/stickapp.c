@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
 
     if(handle == NULL) {
         syslog(LOG_INFO, "Error! Could not find USB Device!");
-        exit(1);
+        exit(-1);
     }
 
     else {
@@ -58,6 +58,11 @@ int main(int argc, char **argv) {
 
     // unlock device
     if(!strcmp(argv[1], "--unlock_device") || !strcmp(argv[1], "-u")) {
+        // check length of unlock key
+        if(strlen(argv[2]) != 7) {
+            syslog(LOG_INFO, "Error! unlock key must be 7 characters!");
+            exit(-1);
+        }
         char tmpBuffer[8];
         tmpBuffer[0] = STATE_UNLOCK_DEVICE;
         memcpy(&tmpBuffer[1], argv[2], 7);
@@ -69,6 +74,10 @@ int main(int argc, char **argv) {
 
     // init device
     else if(!strcmp(argv[1], "--init_device") || !strcmp(argv[1], "-i")) {
+        if(strlen(argv[2]) != 7) {
+            syslog(LOG_INFO, "Error! unlock key must be 7 characters!");
+            exit(-1);
+        }
         char tmpBuffer[8];
         tmpBuffer[0] = STATE_INIT_DEVICE;
         memcpy(&tmpBuffer[1], argv[2], 7);
@@ -90,7 +99,14 @@ int main(int argc, char **argv) {
 
     // clear device
     else if(!strcmp(argv[1], "--clear") || !strcmp(argv[1], "-c")) {
+        char decision;
         syslog(LOG_INFO, "About to erase whole EEPROM on device");
+        printf("Are you sure you want to clear memory content of device? (Y / N)\n");
+        scanf("%c", &decision);
+        if(decision != 'y') {
+            syslog(LOG_INFO, "Aborted");
+            exit(-1);
+        }
         nBytes = usb_control_msg(handle,
             USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_IN,
             USB_CLEAR_EEPROM, 0, 0, 0, 0, 5000);
