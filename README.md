@@ -18,14 +18,15 @@ Yet I chose to explore a third more obscure option: Use a software implementatio
 The reasons for this decision are the following:
 * V-USB if fully compliant with USB1.1.
 * ATTINY85 is an extremely small package (8 pin DIP package). There are no ICs with integrated USB that are this small.
-* Very cheap (~1.67$) compared to other ICs with USB integrated or compared to using two ICs. (also no development board required when using DIP8 package)
-* Hardware is greatly simplified the IC is powered directly from USB VCC and does not require a single external component (not even oscillator).
+* Very cheap (~1.67$) compared to other ICs with USB integrated or compared to using two ICs.
+* Hardware is greatly simplified as the IC is powered directly from USB VCC and does not require a single external component (not even oscillator).
 * This project does not require a lot of CPU and memory resources nor does it need full speed USB protocol.
 * AVR chips are very well documented and used in various projects in the online community.
 * Need to go from nothing to "production ready" in less than 150 hours.
 
 
 ## Compiling the firmware
+At the moment this was only tested on Linux. Cross platform support is coming.
 
 #### Linux
 The following packages are required in order to build the firmware:
@@ -83,7 +84,7 @@ To use the device:
 4. A pushbutton long press (greater than 1 second) will inject the idUsername, the TAB character and the idPassword.
 
 ## Limitations
-Some decisions were made to implement some features (most of them related to memory management) with limitations in order to satisfiy the requirements, but at the same time decrease complexity and ultimately save some time. I am obviously aware that these implementations are suboptimal and I plan on fixing them as soon as the semester is done and time allows.
+Some decisions were made to implement some features (most of them related to memory management) with limitations in order to satisfy the requirements, but at the same time decrease complexity and ultimately save some time. I am obviously aware that these implementations are suboptimal and I plan on fixing them as soon as the semester is done and time allows.
 
 ##### Current limitations on version 1.0:
 1. Maximum of 8 credentials capacity as per scheme below:
@@ -91,6 +92,7 @@ Some decisions were made to implement some features (most of them related to mem
    * idUsername: 32 bytes
    * idPassword: 21 bytes
 2. Unlock key size is 7 bytes.
+3. No mechanisms implemented to prevent EEPROM corruption. This means that if you remove power during an EEPROM write cycle your data WILL be corrupted.
 
 ## Next version
 I already have some ideas for the next iteration the main ones being:
