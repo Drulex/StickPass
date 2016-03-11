@@ -58,6 +58,7 @@
 
 // init
 static unsigned char pbCounter = 0;
+static unsigned char pbHold = 0;
 static unsigned char state = STATE_WAIT;
 static unsigned char flagDone = 0;
 static unsigned char flagCredReady = 0;
@@ -68,16 +69,13 @@ static unsigned char idState;
 static unsigned char clearKeyCnt = 0;
 static unsigned char idCnt = 0;
 static unsigned char credPtr = 0;
+static unsigned char unlockAttempt = 0;
+static unsigned char idleRate;
 static char masterKey[7];
 
+// global structs
 cred_t credReceived;
 keyboard_report_t keyboard_report;
-
-volatile static unsigned char LED_state = 0xff;
-static unsigned char idleRate;
-
-// for PB long press detection
-static unsigned char pbHold = 0;
 
 // hid descriptor stored in flash
 const PROGMEM char usbHidReportDescriptor[USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH] = {

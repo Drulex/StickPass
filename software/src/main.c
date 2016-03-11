@@ -25,7 +25,6 @@ usbMsgLen_t usbFunctionSetup(unsigned char data[8]) {
                 usbMsgPtr = (void *)&keyboard_report;
                 keyboard_report.modifier = 0;
                 keyboard_report.keycode = 0;
-
                 return sizeof(keyboard_report);
 
             case USBRQ_HID_SET_REPORT: // if wLength == 1, should be LED state
@@ -37,7 +36,7 @@ usbMsgLen_t usbFunctionSetup(unsigned char data[8]) {
                 return 1;
 
             // set idleRate as per spec
-            case USBRQ_HID_SET_IDLE: // save idle rate as required by spec
+            case USBRQ_HID_SET_IDLE:
                 idleRate = rq->wValue.bytes[1];
                 return 0;
         }
@@ -51,7 +50,14 @@ usbMsgLen_t usbFunctionSetup(unsigned char data[8]) {
                 return USB_NO_MSG;
 
             case USB_UNLOCK_DEVICE:
-                return USB_NO_MSG;
+                // check if 5 failed unlock attempts occured
+                if(unlockAttempts == 5) {
+                    clearEEPROM(1);
+                    unlockAttempts = 0;
+                    return 0;
+                }
+                else
+                    return USB_NO_MSG;
 
             case USB_LED_ON:
                 if(flagUnlocked)
@@ -103,7 +109,10 @@ usbMsgLen_t usbFunctionWrite(uint8_t * data, unsigned char len) {
             if(memcmp(masterKey, &data[1], 7) == 0) {
                 flagUnlocked = 1;
                 LED_LOW();
+                unlockAttempts = 0;
             }
+            else
+                unlockAttempts++;
             return 1;
 
         case STATE_ID_UPLOAD_INIT:
