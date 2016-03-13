@@ -1,6 +1,7 @@
 software/references/
 software/src/test/
 software/src/app/stickapp
+documents/
 *.swp
 *.o
 *.hex

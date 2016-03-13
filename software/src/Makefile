@@ -1,4 +1,4 @@
-# Makefile
+# Based on the Makefile of the memtype project (https://github.com/jim17/memtype)
 
 # Hardware specific configuration
 DEVICE     = attiny85
