@@ -78,6 +78,7 @@ Will clear the memory contents and preserve the unlock key.
 
 #### Using credentials
 To use the device:
+
 1. Plug in computer. The LED should light up and stay solid. This means the device is locked.
 2. Unlock the device using the unlock key.
 3. A pushbutton shortpress (lesser than 1 second) will display and iterate through available idNames.
@@ -96,6 +97,7 @@ Some decisions were made to implement some features (most of them related to mem
 
 ## Next version
 I already have some ideas for the next iteration the main ones being:
+
 1. External memory chip with hardware encryption.
 2. NFC support for 2 factor authentication.
 3. Rotating knob for navigation.
