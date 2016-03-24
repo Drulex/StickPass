@@ -27,11 +27,11 @@ usbMsgLen_t usbFunctionSetup(unsigned char data[8]) {
                 keyboard_report.keycode = 0;
                 return sizeof(keyboard_report);
 
-            case USBRQ_HID_SET_REPORT: // if wLength == 1, should be LED state
+            case USBRQ_HID_SET_REPORT:
                 return (rq->wLength.word == 1) ? USB_NO_MSG : 0;
 
             // send idleRate to PC as per spec
-            case USBRQ_HID_GET_IDLE: // send idle rate to PC as required by spec
+            case USBRQ_HID_GET_IDLE:
                 usbMsgPtr = &idleRate;
                 return 1;
 
@@ -58,16 +58,6 @@ usbMsgLen_t usbFunctionSetup(unsigned char data[8]) {
                 }
                 else
                     return USB_NO_MSG;
-
-            case USB_LED_ON:
-                if(flagUnlocked)
-                    LED_HIGH();
-                return 0;
-
-            case USB_LED_OFF:
-                if(flagUnlocked)
-                    LED_LOW();
-                return 0;
 
             case USB_ID_UPLOAD:
                 if(flagUnlocked)
