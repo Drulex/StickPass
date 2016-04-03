@@ -22,9 +22,11 @@
 
 // credcnt var is kept at eeprom location 0x1F8 (504)
 #define CREDCOUNT_LOCATION 0x1F8
-// master location in eeprom is 1F9 (505)
+
+// masterkey location in eeprom is 1F9 (505)
 #define MASTERKEY_LOCATION 0x1F9
 
+// structure storing credential related data
 typedef struct {
     char idName[ID_NAME_LEN + 1];
     char idUsername[ID_USERNAME_LEN + 1];

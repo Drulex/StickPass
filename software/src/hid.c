@@ -9,8 +9,12 @@
 
 #include "hid.h"
 
+// global keyboard_report variable
 extern keyboard_report_t keyboard_report;
 
+/*
+ * Return HID code for input character
+ */
 void buildReport(unsigned char sendKey) {
     // by default no modifier
     keyboard_report.modifier = 0;
