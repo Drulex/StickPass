@@ -3,7 +3,7 @@
  * Project: StickPass
  * Author: Alexandru Jora (alexandru@jora.ca)
  * Creation Date: 2016-01-27
- * License: GNU GPL v2 (see License.txt)
+ * License: GNU GPL v3 (see LICENSE)
  *
  */
 
@@ -253,7 +253,7 @@ int main() {
                         }
 
                         else {
-                            if(clearKeyCnt == 10) {
+                                if(clearKeyCnt == 10) {
                                 clearKeyCnt = 0;
                                 flagKeyCleared = 1;
                                 buildReport(sendKey);

@@ -3,7 +3,7 @@
  * Project: StickPass
  * Author: Alexandru Jora (alexandru@jora.ca)
  * Creation Date: 2016-02-28
- * License: GNU GPL v2 (see License.txt)
+ * License: GNU GPL v3 (see LICENSE)
  *
  */
 
@@ -69,7 +69,7 @@ static unsigned char idState;
 static unsigned char clearKeyCnt = 0;
 static unsigned char idCnt = 0;
 static unsigned char credPtr = 0;
-static unsigned char unlockAttempt = 0;
+static unsigned char unlockAttempts = 0;
 static unsigned char idleRate;
 static char masterKey[7];
 

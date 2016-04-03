@@ -3,7 +3,7 @@
  * Project: StickPass
  * Author: Alexandru Jora (alexandru@jora.ca)
  * Creation Date: 2016-01-29
- * License: GNU GPL v2 (see License.txt)
+ * License: GNU GPL v3 (see LICENSE)
  *
  * User application software for StickPass
  */
