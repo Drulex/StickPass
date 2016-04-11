@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
     if(argc < 2) {
         printf("StickApp v1.0 -- A CLI for use with the StickPass password manager\n\n");
         printf("Usage:\n");
-        printf("    -i, --init_device                      Initialize device for the first time\n");
+        printf("    -i, --init_device <masterKey>          Initialize device with specified unlock key\n");
         printf("    -u, --unlock_device <masterKey>        Unlock device\n");
         printf("    -s, --send <idName> <idUser> <idPass>  Send credential to device\n");
         printf("    -g, --generate                         Generate a complex password\n");
@@ -115,6 +115,18 @@ int main(int argc, char **argv) {
 
     // send credential to device
     else if(!strcmp(argv[1], "--send") || !strcmp(argv[1], "-s")) {
+        if(strlen(argv[2]) > ID_NAME_LEN) {
+            syslog(LOG_INFO, "Error! idName must be less or equal to 10 characters!");
+            exit(-1);
+        }
+        if(strlen(argv[3]) > ID_USERNAME_LEN) {
+            syslog(LOG_INFO, "Error! idUsername must be less or equal to 32 characters!");
+            exit(-1);
+        }
+        if(strlen(argv[4]) > ID_PASSWORD_LEN) {
+            syslog(LOG_INFO, "Error! idName must be less or equal to 21 characters!");
+            exit(-1);
+        }
         int i, flagDone, flagFull, bufPtr;
         char tmpBuffer[8];
         int state = STATE_ID_UPLOAD_INIT;
